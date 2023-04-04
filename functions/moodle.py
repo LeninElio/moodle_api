@@ -39,6 +39,30 @@ def cursos_por_id(id):
     return retorno
 
 
+def listar_categorias():
+    list_params = {
+        "wsfunction": "core_course_get_categories"
+    }
+
+    params = {**global_params, **list_params}
+    response = session.get(f"{url}", params=params).json()
+    retorno = [(cat['id'], cat['name']) for cat in response]
+    return retorno
+
+
+def listar_sub_categorias(parent_id):
+    list_params = {
+        "wsfunction": "core_course_get_categories",
+        "criteria[0][key]": "parent",
+        "criteria[0][value]": parent_id
+    }
+
+    params = {**global_params, **list_params}
+    response = session.get(f"{url}", params=params).json()
+    retorno = [(cat['id'], cat['name']) for cat in response]
+    return retorno
+
+
 def iduser_por_username(username):
     list_params = {
         "wsfunction": "core_user_get_users",
@@ -69,10 +93,11 @@ def cursos_por_username(username):
     return cursos_por_id(iduser_por_username(username))
 
 
-def crear_categoria(cat_nombre, cat_desc):
+def crear_categoria(cat_nombre, idnumber, cat_desc):
     list_params = {
         "wsfunction": "core_course_create_categories",
         "categories[0][name]": cat_nombre,
+        "categories[0][idnumber]": idnumber,
         "categories[0][description]": cat_desc,
     }
 
@@ -81,10 +106,11 @@ def crear_categoria(cat_nombre, cat_desc):
     return response
 
 
-def crear_sub_categoria(cat_nombre, cat_desc, parent_id):
+def crear_sub_categoria(cat_nombre, idnumber, cat_desc, parent_id):
     list_params = {
         "wsfunction": "core_course_create_categories",
         "categories[0][name]": cat_nombre,
+        "categories[0][idnumber]": idnumber,
         "categories[0][description]": cat_desc,
         "categories[0][parent]": parent_id
     }
@@ -153,3 +179,15 @@ def desmatricular_usuario(username, course_shortname):
     params = {**global_params, **list_params}
     response = session.post(f"{url}", params=params).json()
     return response
+
+
+# username, course_shortname, roleid = 5
+def matricular_a_cursos(username, cursos, role_id):
+    for curso in cursos:
+        matricular_usuario(username, curso, role_id)
+
+
+# username, course_shortname
+def desmatricular_de_cursos(username, cursos):
+    for curso in cursos:
+        desmatricular_usuario(username, curso)
