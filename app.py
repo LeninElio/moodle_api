@@ -1,7 +1,7 @@
 from functions import moodle, sql
 
 # Semestre a crear
-semestre = '2022-4'
+semestre = '2022-1'
 
 # Creacion de la categoria principal
 def crear_cat_semestre():
@@ -31,7 +31,7 @@ def crear_cat_facultades():
         dbo.Facultad AS f
     WHERE f.Activo = '1' '''
 
-    semestre_val = sql.retorna_valores_semestre('sva.le_semestre', semestre)
+    semestre_val = sql.informacion_semestre(semestre)
 
     try:
         resultados = sql.lista_query(query)
@@ -53,8 +53,9 @@ def crear_cat_facultades():
 
 # Creacion de la sub categoria escuelas
 def crear_cat_escuelas():
-    semestre_val = sql.retorna_valores_semestre('sva.le_semestre', semestre)
+    semestre_val = sql.informacion_semestre(semestre)
 
+    # Se le agrega algunas cosas al query para que la informacion sea mas legible
     query = f'''
     SELECT
         e.Descripcion as cat_name,
