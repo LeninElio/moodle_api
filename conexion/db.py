@@ -9,6 +9,7 @@ user = os.getenv('user')
 password = os.getenv('password')
 database = os.getenv('database')
 
+
 def connection():
     conn = pymssql.connect(
         server=server,
@@ -16,5 +17,7 @@ def connection():
         password=password,
         database=database
     )
-
+    
     return conn
+
+
