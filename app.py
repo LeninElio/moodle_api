@@ -85,4 +85,42 @@ def crear_cat_escuelas():
 
     except Exception as e:
         return f'Fallaste {e}'
+
+
+# Creacion de la sub categoria ciclos
+def crear_cat_ciclos():
+    query = f'''
+    SELECT
+        cp.Escuela,
+        c.Ciclo,
+        le.parent,
+        concat ( le.numeracion, '-', c.Ciclo ) AS numeracion 
+    FROM
+        dbo.CursoProgramado AS cp
+        INNER JOIN dbo.Curso AS c ON c.Curso = cp.Curso 
+        AND cp.Escuela = c.Escuela 
+        AND cp.Curricula = c.Curricula
+        INNER JOIN sva.le_escuela le ON le.idesc = cp.Escuela 
+    WHERE
+        cp.Semestre = '{semestre}' 
+    GROUP BY
+        cp.Escuela,
+        c.Ciclo,
+        le.parent,
+        le.numeracion 
+    '''
+
+    try:
+        resultados = sql.lista_query(query)
+        for resultado in resultados:
+            print(resultado)
+            # ciclos = moodle.crear_sub_categoria(resultado[1], resultado[3], resultado[1], resultado[2])
+            # data = {'numeracion': resultado[3], 'parent': ciclos[0]['id'], "idescparent": resultado[2], "idciclo": resultado[1]}
+            # sql.insertar_datos('sva.le_ciclo', data)
+            # print(data)
+
+    except Exception as e:
+        return f'Fallaste {e}'
     
+
+

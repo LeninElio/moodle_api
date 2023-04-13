@@ -117,6 +117,7 @@ def crear_sub_categoria(cat_nombre, idnumber, cat_desc, parent_id):
 
     params = {**global_params, **list_params}
     response = session.post(f"{url}", params=params).json()
+    # session.post(f"{url}", params=params).json()
     return response
 
 
