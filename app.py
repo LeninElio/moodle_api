@@ -1,7 +1,7 @@
-from functions import moodle, sql
+from funciones import moodle, sql
 
 # Semestre a crear
-semestre = '2022-1'
+semestre = '2020-1'
 
 # Creacion de la categoria principal
 def crear_cat_semestre():
@@ -121,6 +121,6 @@ def crear_cat_ciclos():
 
     except Exception as e:
         return f'Fallaste {e}'
-    
 
 
+crear_cat_ciclos()
