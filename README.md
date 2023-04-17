@@ -12,7 +12,8 @@ Contiene archivos de prueba, se intenta mejorar el codigo de diferentes formas.
 
 ## .asincrona
 
-"De manera normal" la respuesta de la api tarda un poco, en esta carpeta estoy practicando la programacion asincrona
+"De manera normal" la respuesta de la api tarda un poco, en esta carpeta estoy practicando la programacion asincrona.
+> asyncio es una buena opción para tareas que involucran muchas solicitudes de red, mientras que concurrent.futures es una buena opción para tareas que involucran mucho procesamiento de datos o CPU.
 
 ## .funciones
 

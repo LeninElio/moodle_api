@@ -1,18 +1,10 @@
-import asyncio
-import aiohttp
-import requests
+import asyncio, aiohttp, requests, os
 from dotenv import load_dotenv
-import os
 
 load_dotenv('private/.env')
 
 api_key = os.getenv('API_KEY')
 url = os.getenv('url')
-
-global_params = {
-    "wstoken": api_key,
-    "moodlewsrestformat": "json"
-}
 
 session = requests.Session()
 
@@ -25,22 +17,25 @@ async def crear_sub_categoria(params):
 async def crear_cat_ciclos():
     try:
         list_params = [{
+            "wstoken": api_key,
+            "moodlewsrestformat": "json",
             "wsfunction": "core_course_create_categories",
             "categories[0][name]": resultado[1],
             "categories[0][idnumber]": resultado[3],
             "categories[0][description]": resultado[1],
             "categories[0][parent]": resultado[2]
         } for resultado in resultados]
-        params_list = [{**global_params, **params} for params in list_params]
 
         tasks = []
+
         async with aiohttp.ClientSession() as session:
-            for params in params_list:
+            for params in list_params:
                 task = asyncio.ensure_future(crear_sub_categoria(params))
                 tasks.append(task)
             responses = await asyncio.gather(*tasks)
 
         return responses
+    
     except Exception as e:
         return f'Fallaste {e}'
 

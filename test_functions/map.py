@@ -1,8 +1,5 @@
-import requests
+import requests, os, time
 from dotenv import load_dotenv
-import requests
-import os
-import time
 
 load_dotenv('private/.env')
 
@@ -31,9 +28,13 @@ def crear_cat_ciclos():
             "categories[0][description]": resultado[1],
             "categories[0][parent]": resultado[2]
         } for resultado in resultados]
+
         params_list = [{**global_params, **params} for params in list_params]
+        
         responses = list(map(crear_sub_categoria, params_list))
+    
         return responses
+    
     except Exception as e:
         return f'Fallaste {e}'
 
