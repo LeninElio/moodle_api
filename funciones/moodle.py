@@ -192,3 +192,23 @@ def matricular_a_cursos(username, cursos, role_id):
 def desmatricular_de_cursos(username, cursos):
     for curso in cursos:
         desmatricular_usuario(username, curso)
+
+
+def crear_concurr_cursos(params):
+    response = session.post(f"{url}", params=params).json()
+    return response
+
+
+def lista_concurr_cursos(resultados):
+    list_params = [
+        {
+            "wstoken": api_key,
+            "moodlewsrestformat": "json",
+            "wsfunction": "core_course_create_courses",
+            "courses[0][fullname]": resultado[0],
+            "courses[0][shortname]": resultado[1],
+            "courses[0][categoryid]": resultado[2],
+            "courses[0][format]": 'weeks'
+        } for resultado in resultados]
+
+    return list_params

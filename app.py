@@ -1,4 +1,5 @@
 from funciones import moodle, sql
+import concurrent.futures
 
 # Semestre a crear
 semestre = '2020-1'
@@ -123,4 +124,37 @@ def crear_cat_ciclos():
         return f'Fallaste {e}'
 
 
-crear_cat_ciclos()
+# Creacion de la sub categoria ciclos
+def crear_cursos():
+    query = f'''
+    SELECT
+        concat ( cp.Semestre, ', ', c.Nombre, ', ', e.Abreviatura, ', ', cp.Seccion ) AS nombrecompleto,
+        concat ( c.Nombre, ', ', e.Abreviatura, ', ', cp.Semestre, ', ', cp.Seccion ) AS idcurso,
+        lc.parent 
+    FROM
+        dbo.CursoProgramado AS cp
+        INNER JOIN dbo.Curso AS c ON cp.Curricula = c.Curricula 
+        AND cp.Curso = c.Curso 
+        AND cp.Escuela = c.Escuela
+        INNER JOIN sva.le_escuela AS le ON c.Escuela = le.idesc
+        INNER JOIN sva.le_ciclo AS lc ON le.parent = lc.idescparent 
+        AND c.Ciclo = lc.idciclo
+        INNER JOIN dbo.Escuela AS e ON c.Escuela = e.Escuela 
+    WHERE
+        cp.Semestre = '{semestre}'
+    '''
+    
+    try:
+        resultados = sql.lista_query(query)
+        list_params = moodle.lista_concurr_cursos(resultados)
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            responses = list(executor.map(moodle.crear_concurr_cursos, list_params))
+
+        return responses
+    
+    except Exception as e:
+        return f'Fallaste {e}'
+    
+
+crear_cursos()

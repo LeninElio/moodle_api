@@ -24,7 +24,6 @@ list_params = [
 # print(params_list)
 print(list_params)
 
-
 [
     {
         'wstoken': 'api_key', 
