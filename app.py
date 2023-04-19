@@ -1,5 +1,6 @@
 from funciones import moodle, sql
 import concurrent.futures
+import time
 
 # Semestre a crear
 semestre = '2020-1'
@@ -143,13 +144,13 @@ def crear_cursos():
     WHERE
         cp.Semestre = '{semestre}'
     '''
-    
+
     try:
         resultados = sql.lista_query(query)
         list_params = moodle.lista_concurr_cursos(resultados)
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            responses = list(executor.map(moodle.crear_concurr_cursos, list_params))
+            responses = list(executor.map(moodle.creacion_concurrente, list_params))
 
         return responses
     
@@ -157,4 +158,88 @@ def crear_cursos():
         return f'Fallaste {e}'
     
 
-crear_cursos()
+def crear_usuarios():
+    query = f'''
+    SELECT DISTINCT
+        a.alumno,
+        a.password,
+        a.nombre,
+        a.apellido,
+        a.email
+    FROM
+        le_correolimpio AS a
+    WHERE
+        (a.email <> '' or a.email IS NULL)
+        AND CHARINDEX('@', a.email) > 0
+        AND CHARINDEX('.', a.email, CHARINDEX('@', a.email)) > 0
+        AND CHARINDEX(' ', a.email) = 0
+        AND PATINDEX('%[,"()<>;[]]%', a.email) = 0
+    GROUP BY
+        a.email,
+    a.alumno,
+        a.password,
+        a.nombre,
+        a.apellido
+    '''
+
+    try:
+        resultados = sql.lista_query(query)
+        list_params = moodle.lista_concurr_usuarios(resultados)
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            responses = list(executor.map(moodle.creacion_concurrente, list_params))
+
+        return responses
+    
+    except Exception as e:
+        return f'Fallaste {e}'
+
+
+def matricular_alumnos(func):
+    def ejecutor():
+        try:
+            matriculados = func()
+            lista_matriculados = moodle.lista_concurr_matriculas(matriculados)
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                responses = list(executor.map(moodle.creacion_concurrente, lista_matriculados))
+
+            return responses
+        
+        except Exception as e:
+            return f'Fallaste en matricular_alumnos {e}'
+    return ejecutor
+    
+
+# @matricular_alumnos
+def obtener_alumnos_cursos():
+    query = f'''
+    
+    '''
+
+    try:
+        resultados = sql.lista_query(query)
+
+        lista_cursos = moodle.lista_concurr_byshortname(resultados)
+        lista_alumnos = moodle.lista_concurr_byusername(resultados)
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            cursos = list(executor.map(moodle.creacion_concurrente, lista_cursos))
+            alumnos = list(executor.map(moodle.creacion_concurrente, lista_alumnos))
+
+        matriculados = []
+
+        for matricula in zip(alumnos, cursos):
+            matriculados.append([matricula[0]['users'][0]['id'], matricula[1]['courses'][0]['id']])
+
+        print(matriculados)
+        return matriculados
+    
+    except Exception as e:
+        return f'Fallaste en obtner_alumnos_cursos {e}'
+
+
+inicio = time.time()
+obtener_alumnos_cursos()
+fin = time.time()
+
+print(f"Tiempo de ejecución: {fin - inicio} segundos")

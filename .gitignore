@@ -145,3 +145,5 @@ pip-selfcheck.json
 .ionide
 
 private/
+test_data/
+dot.py

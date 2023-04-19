@@ -119,3 +119,25 @@ GO
 ALTER TABLE [sva].[le_facultad] ADD CONSTRAINT [semestre] FOREIGN KEY ([semestre]) REFERENCES [sva].[le_semestre] ([id]) ON DELETE NO ACTION ON UPDATE NO ACTION
 GO
 
+
+	
+-- No tienen correo correcto
+-- SELECT DISTINCT
+-- 	a.alumno,
+-- 	a.password,
+-- 	a.nombre,
+-- 	a.apellido,
+-- 	a.email 
+-- FROM
+-- 	le_correolimpio AS a 
+-- WHERE
+-- 	(
+-- 		a.Email = '' 
+-- 		OR a.email IS NULL 
+-- 		OR CHARINDEX( '@', a.email ) = 0 
+-- 		OR CHARINDEX( '.', a.email, CHARINDEX( '@', a.email ) ) = 0 
+-- 		OR CHARINDEX( ' ', a.email ) > 0 
+-- 		OR PATINDEX( '%[,"()<>;[]]%', a.email ) > 0 
+-- )
+	
+	

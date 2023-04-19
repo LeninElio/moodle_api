@@ -27,6 +27,18 @@ def cursos_por_categoria(id):
     return retorno
 
 
+def cursos_concurr_categoria(resultados):
+    list_params = [{
+        "wstoken": api_key,
+        "moodlewsrestformat": "json",
+        "wsfunction": "core_course_get_courses_by_field",
+        "field": "category",
+        "value": resultado[0]
+    } for resultado in resultados]
+
+    return list_params
+
+
 def cursos_por_id(id):
     list_params = {
         "wsfunction": "core_enrol_get_users_courses",
@@ -194,7 +206,7 @@ def desmatricular_de_cursos(username, cursos):
         desmatricular_usuario(username, curso)
 
 
-def crear_concurr_cursos(params):
+def creacion_concurrente(params):
     response = session.post(f"{url}", params=params).json()
     return response
 
@@ -212,3 +224,55 @@ def lista_concurr_cursos(resultados):
         } for resultado in resultados]
 
     return list_params
+
+
+def lista_concurr_usuarios(resultados):
+    list_params = [{
+        "wstoken": api_key,
+        "moodlewsrestformat": "json",
+        "wsfunction": "core_user_create_users",
+        "users[0][username]": resultado[0],
+        "users[0][password]": resultado[1],
+        "users[0][firstname]": resultado[2], 
+        "users[0][lastname]": resultado[3], 
+        "users[0][email]": resultado[4]
+    } for resultado in resultados]
+    
+    return list_params
+
+
+def lista_concurr_byusername(resultados):
+    list_params = [{
+        "wstoken": api_key,
+        "moodlewsrestformat": "json",
+        "wsfunction": "core_user_get_users",
+        "criteria[0][key]": "username",
+        "criteria[0][value]": resultado[0]
+    } for resultado in resultados]
+
+    return list_params
+
+def lista_concurr_byshortname(resultados):
+    list_params = [{
+        "wstoken": api_key,
+        "moodlewsrestformat": "json",
+        "wsfunction": "core_course_get_courses_by_field",
+        "field": "shortname",
+        "value": resultado[1]
+    } for resultado in resultados]
+
+    return list_params
+
+
+def lista_concurr_matriculas(resultados):
+    list_params = [{
+        "wstoken": api_key,
+        "wsfunction": "enrol_manual_enrol_users",
+        "enrolments[0][roleid]": 3,
+        "enrolments[0][courseid]": resultado[1],
+        "enrolments[0][userid]": resultado[0]
+    } for resultado in resultados]
+
+    return list_params
+
+
