@@ -1,6 +1,6 @@
-from funciones import moodle, sql
+from funciones import moodle, sql, principal
 import concurrent.futures
-import time
+import pandas as pd
 
 # Semestre a crear
 semestre = '2020-1'
@@ -211,35 +211,67 @@ def matricular_alumnos(func):
     
 
 # @matricular_alumnos
+@principal.calcular_tiempo
 def obtener_alumnos_cursos():
     query = f'''
-    
+    SELECT TOP 1000
+        LOWER(r.Alumno) AS alumno,
+        concat ( c.Nombre, ', ', e.Abreviatura, ', ', cp.Semestre, ', ', cp.Seccion ) AS idcurso 
+    FROM
+        dbo.Rendimiento AS r
+        INNER JOIN dbo.Curso AS c ON r.Curricula = c.Curricula 
+        AND r.Curso = c.Curso 
+        AND r.Escuela = c.Escuela
+        INNER JOIN dbo.CursoProgramado AS cp ON c.Curricula = cp.Curricula 
+        AND c.Curso = cp.Curso 
+        AND c.Escuela = cp.Escuela 
+        AND r.Semestre = cp.Semestre 
+        AND r.Seccion = cp.Seccion
+        INNER JOIN dbo.Escuela AS e ON cp.Escuela = e.Escuela 
+    WHERE
+        r.Semestre = '2020-1';
     '''
 
-    try:
-        resultados = sql.lista_query(query)
+    # try:
 
-        lista_cursos = moodle.lista_concurr_byshortname(resultados)
-        lista_alumnos = moodle.lista_concurr_byusername(resultados)
+    resultados = sql.lista_query(query)
+    lista_cursos = moodle.lista_concurr_byshortname(resultados)
+    lista_alumnos = moodle.lista_concurr_byusername(resultados)
 
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            cursos = list(executor.map(moodle.creacion_concurrente, lista_cursos))
-            alumnos = list(executor.map(moodle.creacion_concurrente, lista_alumnos))
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        cursos = list(executor.map(moodle.creacion_concurrente, lista_cursos))
+        alumnos = list(executor.map(moodle.creacion_concurrente, lista_alumnos))
 
-        matriculados = []
-
+    with open("./test_data/temp_data.txt", "a", encoding='utf-8') as file:
         for matricula in zip(alumnos, cursos):
-            matriculados.append([matricula[0]['users'][0]['id'], matricula[1]['courses'][0]['id']])
-
-        print(matriculados)
-        return matriculados
+            # matriculados = f"{matricula[0]['users'][0]['id']}, {matricula[1]['courses'][0]['id']}"
+            file.write(str(matricula) + "\n")
     
-    except Exception as e:
-        return f'Fallaste en obtner_alumnos_cursos {e}'
+    # except Exception as e:
+    #     return f'Fallaste {e}'
 
 
-inicio = time.time()
 obtener_alumnos_cursos()
-fin = time.time()
 
-print(f"Tiempo de ejecución: {fin - inicio} segundos")
+# @principal.calcular_tiempo
+# def conwith():
+#     with open('./test_data/temp_data.txt', 'r', encoding='utf-8') as file:
+#         datos = file.readlines()
+#         resultados = [[int(x) for x in dato.split(',')] for dato in datos]
+    
+#     return resultados
+
+# # print(resultado)
+
+
+
+# @principal.calcular_tiempo
+# def pandita():
+#     df = pd.read_csv('./test_data/temp_data.txt', header=None, names=['A', 'B'])
+#     lista = df.values.tolist()
+#     return lista
+
+
+# conwith()
+
+# pandita()
