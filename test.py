@@ -3,12 +3,23 @@ import concurrent.futures
 import pandas as pd
 
 @principal.calcular_tiempo
-def conwith():
-    with open('./test_data/temp_data.txt', 'r', encoding='utf-8') as file:
-        datos = file.readlines()
-        # resultados = [[int(x) for x in dato.split(',')] for dato in datos]
-    
-    print(datos)
-    # return resultados
+def pandita():
+    with open('./test_data/temp_data_copy.txt', 'r', encoding='utf-8') as archivo:
+        datos_objeto = [eval(linea) for linea in archivo]
 
-conwith()
+    for obj in datos_objeto:
+        print(obj)
+        # try:
+        #     id = obj[0]['users'][0]['id']
+        #     username = obj[0]['users'][0]['username']
+        #     email = obj[0]['users'][0]['email']
+        #     course_id = obj[1]['courses'][0]['id']
+        #     fullname = obj[1]['courses'][0]['fullname']
+        #     print(id, username, email, course_id, fullname)
+        # except (KeyError, IndexError):
+        #     print('Error: objeto no tiene la estructura esperada')
+        #     continue
+
+
+
+pandita()

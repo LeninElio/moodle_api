@@ -214,7 +214,7 @@ def matricular_alumnos(func):
 @principal.calcular_tiempo
 def obtener_alumnos_cursos():
     query = f'''
-    SELECT TOP 1000
+    SELECT
         LOWER(r.Alumno) AS alumno,
         concat ( c.Nombre, ', ', e.Abreviatura, ', ', cp.Semestre, ', ', cp.Seccion ) AS idcurso 
     FROM
