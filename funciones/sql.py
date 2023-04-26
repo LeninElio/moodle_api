@@ -26,6 +26,19 @@ def insertar_datos(table, data):
         cursor.execute(query, tuple(data.values()))
 
 
+# Actualizar datos
+def actualizar_datos(set_values, condition):
+    # set_values = ', '.join([f"{key} = {value}" for key, value in data.items()])
+    query = f"UPDATE dbo.Alumno SET moodle_id = {set_values} WHERE Alumno = %s"
+    with obtener_cursor() as cursor:
+        cursor.execute(query, condition)
+
+
+def ejecutar(query):
+    with obtener_cursor() as cursor:
+        cursor.execute(query)
+
+
 # retorna un listado de datos
 def lista_query(query):
     with obtener_cursor() as cursor:

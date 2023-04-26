@@ -88,19 +88,6 @@ def iduser_por_username(username):
     return retorno[0]
 
 
-def iduser_por_usernamex(username):
-    list_params = {
-        "wsfunction": "core_user_get_users",
-        "criteria[0][key]": "username",
-        "criteria[0][value]": username
-    }
-
-    params = {**global_params, **list_params}
-    response = session.get(f"{url}", params=params).json()
-    # retorno = [user['id'] for user in response['users']]
-    return response
-
-
 def idcourse_por_shortname(shortname):
     list_params = {
         "wsfunction": "core_course_get_courses_by_field",
@@ -302,17 +289,24 @@ def lista_concurr_matriculas(resultados):
     return list_params
 
 
-# def listar_matriculados(semestre):
-#     query = f'''
-#     SELECT DISTINCT LOWER
-#         (r.Alumno) AS alumno 
-#     FROM
-#         Rendimiento r 
-#     WHERE
-#         r.Semestre = '{semestre}'
-#     '''
-    
-#     resultados = sql.lista_query(query)
-#     resultados = [resultado[0] for resultado in resultados]
+def async_idby_username(username):
+    list_params = {
+        "wsfunction": "core_user_get_users",
+        "criteria[0][key]": "username",
+        "criteria[0][value]": username
+    }
 
-#     return resultados
+    params = {**global_params, **list_params}
+    response = session.get(f"{url}", params=params).json()
+    return response
+
+
+def concur_idby_username(resultados):
+    list_params = [{
+        "wstoken": api_key,
+        "wsfunction": "core_user_get_users",
+        "criteria[0][key]": "username",
+        "criteria[0][value]": resultado
+    } for resultado in resultados]
+
+    return list_params

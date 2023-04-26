@@ -1,5 +1,6 @@
-from funciones import moodle, sql, principal
+from funciones import moodle, sql, funciones
 import concurrent.futures
+from concurrent.futures import ThreadPoolExecutor
 import pandas as pd
 
 # Semestre a crear
@@ -210,22 +211,61 @@ def matricular_alumnos(func):
     return ejecutor
     
 
+def get_username_id(username):
+    existe = moodle.async_idby_username(username)
+    
+    if existe['users'] == []:
+        return (username, False)
+    else:
+        return (username, existe['users'][0]['id'])
+
+
+def actualizar_idpor_lotes(alumnos):
+    sql.ejecutar("CREATE TABLE sva.le_alumnos (nombreusuario VARCHAR(20), moodle_id INT)")
+
+    for alumno in alumnos:
+        data = {'nombreusuario': alumno[0], 'moodle_id': alumno[1]}
+        sql.insertar_datos('sva.le_alumnos', data)
+    
+    sql.ejecutar("""
+        UPDATE a
+        SET a.moodle_id = la.moodle_id
+        FROM dbo.Alumno as a
+        INNER JOIN sva.le_alumnos as la
+        ON a.Alumno = la.nombreusuario
+    """)
+    
+    sql.ejecutar("DROP TABLE IF EXISTS sva.le_alumnos")
+
+
+@funciones.calcular_tiempo
 def insertar_id_alumno():
     query = f'''
-    SELECT DISTINCT LOWER
-        (r.Alumno) AS alumno 
+    SELECT DISTINCT TOP 1000 
+        LOWER(r.Alumno) AS alumno 
     FROM
-        Rendimiento r 
+        dbo.Rendimiento AS r
+        INNER JOIN dbo.Alumno AS a ON r.Alumno = a.Alumno 
     WHERE
-        r.Semestre = '{semestre}'
+        a.moodle_id IS NULL 
+        AND r.Semestre = '{semestre}'
     '''
     
     resultados = sql.lista_query_especifico(query)
 
-    lista_alumnos = moodle.lista_concurr_byusername(resultados)
+    try:
+        with ThreadPoolExecutor() as executor:
+            results = list(executor.map(get_username_id, resultados))
+    
+        existe = [(username, exists) for username, exists in results if exists > 0]
+        noexiste = [username for username, exists in results if not exists]
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        alumnos = list(executor.map(moodle.creacion_concurrente, lista_alumnos))
+        actualizar_idpor_lotes(existe)
+
+        print(noexiste)
+
+    except Exception as e:
+        return e
 
 
 insertar_id_alumno()
