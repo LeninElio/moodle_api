@@ -220,7 +220,16 @@ def get_username_id(username):
         return (username, existe['users'][0]['id'])
 
 
-def actualizar_idpor_lotes(alumnos):
+def get_idcourseby_shortname(shortname):
+    existe = moodle.async_idby_shortname(shortname)
+    
+    if existe['courses'] == []:
+        return (shortname, False)
+    else:
+        return (shortname, existe['courses'][0]['id'])
+
+
+def actualizar_iduserpor_lotes(alumnos):
     sql.ejecutar("CREATE TABLE sva.le_alumnos (nombreusuario VARCHAR(20), moodle_id INT)")
 
     for alumno in alumnos:
@@ -298,7 +307,7 @@ def insertar_id_alumno():
             existe = [(username, exists) for username, exists in results if exists > 0]
             noexiste = [username for username, exists in results if not exists]
 
-            actualizar_idpor_lotes(existe)
+            actualizar_iduserpor_lotes(existe)
             crear_usuario_restante(noexiste)
             print(noexiste)
 
@@ -309,3 +318,85 @@ def insertar_id_alumno():
             return e
 
 
+def actualizar_idcoursepor_lotes(alumnos):
+    sql.ejecutar("CREATE TABLE sva.le_courses_temp (nombrecorto VARCHAR(255), id_moodle INT)")
+
+    for alumno in alumnos:
+        data = {'nombrecorto': alumno[0], 'id_moodle': alumno[1]}
+        sql.insertar_datos('sva.le_courses_temp', data)
+    
+    sql.ejecutar("""
+        UPDATE lc 
+        SET lc.id_moodle = lct.id_moodle 
+        FROM
+            sva.le_cursos AS lc
+            INNER JOIN sva.le_courses_temp AS lct 
+            ON lc.nombrecorto = lct.nombrecorto
+    """)
+    
+    sql.ejecutar("DROP TABLE IF EXISTS sva.le_courses_temp")
+
+
+def crear_curso_restante(lista):
+    cursos = "', '".join(lista)
+
+    query = f'''
+    SELECT
+        nombrecompleto, 
+        nombrecorto, 
+        categoriaid, 
+        fechainicio, 
+        idcurso
+    FROM
+        sva.le_cursos AS lc
+    WHERE
+        lc.nombrecorto IN ('{cursos}')
+    '''
+
+    resultados = sql.lista_query(query)
+
+    try:
+        list_params = moodle.lista_concurr_cursos(resultados)
+        with ThreadPoolExecutor() as executor:
+            responses = list(executor.map(moodle.creacion_concurrente, list_params))
+
+        print(list_params)
+        return responses
+    
+    except Exception as e:
+        return e
+
+
+@funciones.calcular_tiempo
+def insertar_id_curso():
+    query = f'''
+    SELECT 
+        lc.nombrecorto
+    FROM
+        sva.le_cursos AS lc
+    WHERE
+        lc.semestre = '{semestre}' and 
+        lc.id_moodle is null  
+    '''
+    
+    resultados = sql.lista_query_especifico(query)
+
+    try:
+        if resultados != []:
+            with ThreadPoolExecutor() as executor:
+                results = list(executor.map(get_idcourseby_shortname, resultados))
+
+            existe = [(username, exists) for username, exists in results if exists > 0]
+            noexiste = [username for username, exists in results if not exists]
+
+            actualizar_idcoursepor_lotes(existe)
+            crear_curso_restante(noexiste)
+
+        else:
+            print('No hay mas datos')
+
+    except Exception as e:
+            return e
+
+
+insertar_id_curso()

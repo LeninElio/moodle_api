@@ -220,7 +220,9 @@ def lista_concurr_cursos(resultados):
             "courses[0][fullname]": resultado[0],
             "courses[0][shortname]": resultado[1],
             "courses[0][categoryid]": resultado[2],
-            "courses[0][format]": 'weeks'
+            "courses[0][idnumber]": resultado[4],
+            "courses[0][format]": 'weeks',
+            "courses[0][startdate]": resultado[3]
         } for resultado in resultados]
 
     return list_params
@@ -294,6 +296,18 @@ def async_idby_username(username):
         "wsfunction": "core_user_get_users",
         "criteria[0][key]": "username",
         "criteria[0][value]": username
+    }
+
+    params = {**global_params, **list_params}
+    response = session.get(f"{url}", params=params).json()
+    return response
+
+
+def async_idby_shortname(shortname):
+    list_params = {
+        "wsfunction": "core_course_get_courses_by_field",
+        "field": "shortname",
+        "value": shortname
     }
 
     params = {**global_params, **list_params}

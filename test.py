@@ -1,4 +1,4 @@
-from funciones import moodle, sql, principal
-import concurrent.futures
+from funciones import moodle, sql, funciones
+from concurrent.futures import ThreadPoolExecutor 
 import pandas as pd
 
