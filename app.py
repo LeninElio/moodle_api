@@ -238,10 +238,47 @@ def actualizar_idpor_lotes(alumnos):
     sql.ejecutar("DROP TABLE IF EXISTS sva.le_alumnos")
 
 
-@funciones.calcular_tiempo
+def crear_usuario_restante(lista):
+    usuarios = "', '".join(lista)
+
+    query = f'''
+    SELECT
+        Alumno AS username,
+        TRIM ( Password ) AS password,
+        Nombre AS nombre,
+        CONCAT ( ApellidoPaterno, ' ', ApellidoMaterno ) AS apellido,
+        LOWER (
+            CONCAT (
+                dbo.eliminar_acentos ( SUBSTRING ( ApellidoPaterno, 1, 2 ) ),
+                dbo.eliminar_acentos ( ApellidoMaterno ),
+                dbo.eliminar_acentos ( SUBSTRING ( Nombre, 1, 2 ) ),
+                '@unasam.edu.pe' 
+            ) 
+        ) AS correo 
+    FROM
+        dbo.Alumno AS a 
+    WHERE
+        Alumno IN ('{usuarios}')
+    '''
+
+    resultados = sql.lista_query(query)
+    
+    try:
+        list_params = moodle.lista_concurr_usuarios(resultados)
+
+        with ThreadPoolExecutor() as executor:
+            responses = list(executor.map(moodle.creacion_concurrente, list_params))
+
+        return responses
+    
+    except Exception as e:
+        return e
+
+
+# @funciones.calcular_tiempo
 def insertar_id_alumno():
     query = f'''
-    SELECT DISTINCT TOP 1000 
+    SELECT DISTINCT
         LOWER(r.Alumno) AS alumno 
     FROM
         dbo.Rendimiento AS r
@@ -254,19 +291,21 @@ def insertar_id_alumno():
     resultados = sql.lista_query_especifico(query)
 
     try:
-        with ThreadPoolExecutor() as executor:
-            results = list(executor.map(get_username_id, resultados))
-    
-        existe = [(username, exists) for username, exists in results if exists > 0]
-        noexiste = [username for username, exists in results if not exists]
+        if resultados != []:
+            with ThreadPoolExecutor() as executor:
+                results = list(executor.map(get_username_id, resultados))
+        
+            existe = [(username, exists) for username, exists in results if exists > 0]
+            noexiste = [username for username, exists in results if not exists]
 
-        actualizar_idpor_lotes(existe)
+            actualizar_idpor_lotes(existe)
+            crear_usuario_restante(noexiste)
+            print(noexiste)
 
-        print(noexiste)
+        else:
+            print('No hay mas datos')
 
     except Exception as e:
-        return e
+            return e
 
-
-insertar_id_alumno()
 

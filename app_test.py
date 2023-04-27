@@ -123,7 +123,7 @@ async def obtener_username(username):
 
 
 async def lista_alumnos():
-    resultados = ['131.2502.153', '00.0018.n.ac', '00.0360.1.ad', '00.0496.5.ao', '00.0600.n.ad', '01.0147.6.dl', '01.0227.9.ah', '01.0234.8.an', '01.0284.1.eo', '02.0276.2.de', '02.0391.3.ar']
+    resultados = []
 
     tasks = [obtener_username(resultado) for resultado in resultados]
     no_existente = await asyncio.gather(*tasks)
@@ -145,7 +145,7 @@ def get_username(username):
 
 
 def list_username():
-    resultados = ['131.2502.153', '00.0018.n.ac', '00.0360.1.ad', '00.0496.5.ao', '00.0600.n.ad', '01.0147.6.dl', '01.0227.9.ah', '01.0234.8.an', '01.0284.1.eo', '02.0276.2.de', '02.0391.3.ar']
+    resultados = []
 
     with ThreadPoolExecutor() as executor:
         no_existente = list(executor.map(get_username, resultados))
@@ -168,7 +168,7 @@ def get_user(username):
 
 
 def list_username_exist():
-    resultados = ['131.2502.153', '00.0018.n.ac', '00.0360.1.ad', '00.0496.5.ao', '00.0600.n.ad', '01.0147.6.dl', '01.0227.9.ah', '01.0234.8.an', '01.0284.1.eo', '02.0276.2.de', '02.0391.3.ar']
+    resultados = []
     
     with ThreadPoolExecutor() as executor:
         results = list(executor.map(get_user, resultados))
@@ -190,12 +190,11 @@ def get_username_id(username):
     if existe['users'] == []:
         return (username, False)
     else:
-        # print(existe['users'][0]['id'])
         return (username, existe['users'][0]['id'])
 
 
 def listar_matriculados():
-    resultados = ['201.2904.009', '191.0105.034', '171.1006.002', '201.1006.004', '201.1205.035', '151.0505.470', '201.0906.045', '151.0403.050', '161.0904.259', '151.0802.223', '132.2901.457', '181.3602.049', '161.1203.664', '151.0103.187', '151.1905.348', '151.1604.461', '171.0306.027', '151.2502.055', '082.0904.344']
+    resultados = []
     
     with ThreadPoolExecutor() as executor:
         results = list(executor.map(get_username_id, resultados))
@@ -206,7 +205,8 @@ def listar_matriculados():
     # return (existe, noexiste)
     # print(f'{existe=}, {noexiste=}')
     print(existe)
-    # print(noexiste)
+    print('')
+    print(noexiste)
 
 
 listar_matriculados()
