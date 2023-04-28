@@ -54,6 +54,16 @@ def lista_query_especifico(query):
     return [dato[0] for dato in datos]
 
 
+def lista_query_uno(query):
+    with obtener_cursor() as cursor:
+        cursor.execute(query)
+        datos = cursor.fetchone()
+    try:
+        return datos[0]
+    except TypeError:
+        return None
+
+
 # retorna el id y parent del semestre actual 
 def informacion_semestre(semestre):
     with obtener_cursor() as cursor:

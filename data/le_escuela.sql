@@ -214,3 +214,78 @@ SELECT DATEADD(SECOND, 1682553540, '1970-01-01 00:00:00.0')
 
 -- Date to timestamp
 SELECT DATEDIFF(SECOND, '1970-01-01 00:00:00.0', '2023-04-26 23:59:00.0')
+
+
+-- Procedimiento para retornar los matriculados
+
+CREATE PROCEDURE le_matriculados (@semestre varchar(10), @estudiante varchar(20) = NULL)
+AS
+BEGIN	
+		
+		IF ISNULL(@estudiante, '') = ''
+    BEGIN
+        SELECT LOWER
+					( r.Alumno ) AS alumno,
+					concat ( c.Nombre, ', ', e.Abreviatura, ', ', cp.Semestre, ', ', cp.Seccion ) AS idcurso 
+					INTO #matricula_total
+				FROM
+					dbo.Rendimiento AS r
+					INNER JOIN dbo.Curso AS c ON r.Curricula = c.Curricula 
+					AND r.Curso = c.Curso 
+					AND r.Escuela = c.Escuela
+					INNER JOIN dbo.CursoProgramado AS cp ON c.Curricula = cp.Curricula 
+					AND c.Curso = cp.Curso 
+					AND c.Escuela = cp.Escuela 
+					AND r.Semestre = cp.Semestre 
+					AND r.Seccion = cp.Seccion
+					INNER JOIN dbo.Escuela AS e ON cp.Escuela = e.Escuela 
+				WHERE
+					r.Semestre = @semestre
+					
+					
+				SELECT
+					lc.id_moodle AS curso_id,
+					a.moodle_id AS alumno_id 
+				FROM
+					#matricula_total m
+					INNER JOIN sva.le_cursos lc ON lc.nombrecorto = m.idcurso
+					INNER JOIN dbo.Alumno a ON m.alumno = a.Alumno
+					
+					
+				DROP TABLE IF EXISTS #matricula_total;
+				
+    END
+    ELSE
+    
+		BEGIN
+        SELECT LOWER
+					( r.Alumno ) AS alumno,
+					concat ( c.Nombre, ', ', e.Abreviatura, ', ', cp.Semestre, ', ', cp.Seccion ) AS idcurso
+					INTO #matricula_alumno
+				FROM
+					dbo.Rendimiento AS r
+					INNER JOIN dbo.Curso AS c ON r.Curricula = c.Curricula 
+					AND r.Curso = c.Curso 
+					AND r.Escuela = c.Escuela
+					INNER JOIN dbo.CursoProgramado AS cp ON c.Curricula = cp.Curricula 
+					AND c.Curso = cp.Curso 
+					AND c.Escuela = cp.Escuela 
+					AND r.Semestre = cp.Semestre 
+					AND r.Seccion = cp.Seccion
+					INNER JOIN dbo.Escuela AS e ON cp.Escuela = e.Escuela 
+				WHERE
+					r.Semestre = @semestre
+					and r.Alumno = @estudiante;
+					
+				SELECT
+					lc.id_moodle AS curso_id,
+					a.moodle_id AS alumno_id 
+				FROM
+					#matricula_alumno m
+					INNER JOIN sva.le_cursos lc ON lc.nombrecorto = m.idcurso
+					INNER JOIN dbo.Alumno a ON m.alumno = a.Alumno;
+					
+				
+				DROP TABLE IF EXISTS #matricula_alumno
+    END
+END

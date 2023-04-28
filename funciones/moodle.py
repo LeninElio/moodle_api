@@ -51,6 +51,29 @@ def cursos_por_id(id):
     return retorno
 
 
+def idcursos_por_id(id):
+    list_params = {
+        "wsfunction": "core_enrol_get_users_courses",
+        "userid": id
+    }
+
+    params = {**global_params, **list_params, "moodlewsrestformat": "json"}
+    response = session.get(f"{url}", params=params).json()
+    retorno = [curso['id'] for curso in response]
+    return retorno
+
+
+def lista_cursospor_id(resultados):
+    list_params = [{
+        "wstoken": api_key,
+        "moodlewsrestformat": "json",
+        "wsfunction": "core_enrol_get_users_courses",
+        "userid": resultado
+    } for resultado in resultados]
+
+    return list_params
+
+
 def listar_categorias():
     list_params = {
         "wsfunction": "core_course_get_categories"
@@ -315,12 +338,60 @@ def async_idby_shortname(shortname):
     return response
 
 
+def async_alumnosby_course(course_id):
+    list_params = {
+        "wsfunction": "core_enrol_get_enrolled_users",
+        "courseid": course_id
+    }
+
+    params = {**global_params, **list_params}
+    response = session.get(f"{url}", params=params).json()
+    return response
+
+
+def async_peticion_por_idcurso(respuestas):
+    list_params = [{
+        "wstoken": api_key,
+        "moodlewsrestformat": "json",
+        "wsfunction": "core_enrol_get_enrolled_users",
+        "courseid": respuesta
+    } for respuesta in respuestas]
+
+    return list_params
+
+
 def concur_idby_username(resultados):
     list_params = [{
         "wstoken": api_key,
         "wsfunction": "core_user_get_users",
         "criteria[0][key]": "username",
         "criteria[0][value]": resultado
+    } for resultado in resultados]
+
+    return list_params
+
+
+# roleid toma por defecto el valor de 5 = student, 3 = docente con permiso de edicion 
+def concurr_matricular_usuario(resultados, roleid = 5):
+    list_params = [{
+        "wstoken": api_key,
+        "moodlewsrestformat": "json",
+        "wsfunction": "enrol_manual_enrol_users",
+        "enrolments[0][roleid]": roleid,
+        "enrolments[0][courseid]": resultado[0],
+        "enrolments[0][userid]": resultado[1]
+    } for resultado in resultados]
+
+    return list_params
+
+
+def concurr_desmatricular_usuario(resultados):
+    list_params = [{
+        "wstoken": api_key,
+        "moodlewsrestformat": "json",
+        "wsfunction": "enrol_manual_unenrol_users",
+        "enrolments[0][courseid]": resultado[0],
+        "enrolments[0][userid]": resultado[1]
     } for resultado in resultados]
 
     return list_params
