@@ -2,6 +2,7 @@ from funciones import moodle, sql, funciones
 import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
 import pandas as pd
+import json
 
 # Semestre a crear
 semestre = '2020-1'
@@ -399,4 +400,85 @@ def insertar_id_curso():
             return e
 
 
-insertar_id_curso()
+def insertar_matriculas_bd(matriculas):
+    with sql.obtener_cursor() as cursor:
+        for matricula in matriculas:
+            data = {'curso_id': matricula[0], 'alumno_id': matricula[1]}
+            
+            cursor.execute('INSERT INTO sva.le_maticulas_moodle (curso_id, alumno_id) VALUES (%s, %s)', (data['curso_id'], data['alumno_id']))
+            
+    return 'Completo'
+
+    
+# funcion que permite obtener a los alumnos y sus cursos matriculados a partir de un id curso mas rapido
+@funciones.calcular_tiempo_arg
+def obtener_matriculas_moodle():
+    query = "SELECT top 3 lc.id_moodle from sva.le_cursos lc"
+    
+    cursos = sql.lista_query_especifico(query)
+
+    try:
+        if cursos != []:
+
+            list_params = moodle.async_peticion_por_idcurso(cursos)
+            
+            with ThreadPoolExecutor() as executor:
+                responses = list(executor.map(moodle.creacion_concurrente, list_params))
+
+            matriculas = [(cursos['id'], matriculados['id']) for resultado in responses for matriculados in resultado for cursos in matriculados['enrolledcourses']]
+
+            # print(matriculas)
+
+            insertar_matriculas_bd(matriculas)
+
+        else:
+            print('No hay cursos')
+
+    except Exception as e:
+            return e
+
+
+def transformar_dataframe(dataframe):
+    obtenidos = []
+    for col in dataframe.columns:
+        for row in dataframe[col]:
+            if row is not None and 'id' in row:
+                cursos = [curso['id'] for curso in row['enrolledcourses'] if 'id' in curso] if row['enrolledcourses'] is not None else []
+                obtenidos.append([(curso, row['id']) for curso in cursos])
+
+    obtenido = [ids for lista in obtenidos for ids in lista]
+    # daf = pd.DataFrame(obtenido, columns=['curso', 'id'])
+    return obtenido
+
+
+@funciones.calcular_tiempo_arg
+def obtener_matriculas_moodle_pandas():
+    query = "SELECT lc.id_moodle from sva.le_cursos lc"
+    
+    cursos = sql.lista_query_especifico(query)
+
+    try:
+        if cursos != []:
+
+            list_params = moodle.async_peticion_por_idcurso(cursos)
+            
+            with ThreadPoolExecutor() as executor:
+                responses = list(executor.map(moodle.creacion_concurrente, list_params))
+
+            json_data = json.dumps(responses)
+            df = pd.read_json(json_data)
+
+            matriculas = transformar_dataframe(df)
+
+            print(len(matriculas))
+
+            insertar_matriculas_bd(matriculas)
+
+        else:
+            print('No hay cursos')
+
+    except Exception as e:
+            return e
+
+
+obtener_matriculas_moodle_pandas()

@@ -289,3 +289,33 @@ BEGIN
 				DROP TABLE IF EXISTS #matricula_alumno
     END
 END
+
+-- Busqueda de estudiantes sin matricula
+
+DROP TABLE IF EXISTS #matricula_moodle; 
+DROP TABLE IF EXISTS #matricula_sga;
+
+SELECT
+	lm.curso_id,
+	lm.alumno_id INTO #matricula_moodle 
+FROM
+	sva.le_maticulas_moodle lm 
+GROUP BY
+	lm.curso_id,
+	lm.alumno_id;
+
+CREATE TABLE #matricula_sga ( curso_id INT, alumno_id INT );
+
+INSERT INTO #matricula_sga EXEC le_matriculados '2020-1';
+
+SELECT
+	ms.curso_id AS curso_sga,
+	ms.alumno_id AS alumno_sga,
+	mm.curso_id AS curso_moodle,
+	mm.alumno_id AS alumno_moodle 
+FROM
+	#matricula_sga ms
+	LEFT JOIN #matricula_moodle mm ON ms.curso_id = mm.curso_id 
+	AND ms.alumno_id = mm.alumno_id 
+WHERE
+	mm.alumno_id IS NULL;

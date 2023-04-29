@@ -107,9 +107,10 @@
 
 # listar_datos_txt()
 
-from funciones import moodle
+from funciones import moodle, sql
 from concurrent.futures import ThreadPoolExecutor
 import asyncio
+from conexion import db
 
 
 # Devuelve la lista de los usuario no creados en moodle usando asyncio
@@ -209,4 +210,35 @@ def listar_matriculados():
     print(noexiste)
 
 
-listar_matriculados()
+# con esta funcion se realiza una transaccion a la bd para mayor velocidad de insercion
+# la version mejorada esta en el archivo app
+def insertar_matriculas_bd(matriculas):
+
+    conn = db.connection()
+    cursor = conn.cursor()
+    
+    try:
+        for matricula in matriculas:
+            data = {'curso_id': matricula[0], 'alumno_id': matricula[1]}
+            cursor.execute('INSERT INTO sva.le_maticulas_moodle (curso_id, alumno_id) VALUES (%s, %s)', (data['curso_id'], data['alumno_id']))
+            print(data['curso_id'], data['alumno_id'])
+
+        conn.commit()
+        
+        return 'Completo'
+    
+    except Exception as e:
+        cursor.execute('ROLLBACK')
+        return 'Error'
+    
+    finally:
+        conn.close()
+
+
+# funcion original de insercion, demasiado lento
+def insertar_matriculas_bd(matriculas):
+    for matricula in matriculas:
+        data = {'curso_id': matricula[0], 'alumno_id': matricula[1]}
+        sql.insertar_datos('sva.le_maticulas_moodle', data)
+
+    return 'Completo'
