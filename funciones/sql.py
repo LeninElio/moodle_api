@@ -9,11 +9,15 @@ def obtener_cursor():
     try:
         yield cursor
         conn.commit()
+        mensaje = "Transacción realizada con éxito."
     except:
         conn.rollback()
+        mensaje = "La transacción ha fallado. Se ha realizado un rollback."
         raise
     finally:
         conn.close()
+        mensaje += " Conexión cerrada."
+        return mensaje
 
 
 # Insertar datos

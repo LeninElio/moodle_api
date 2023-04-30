@@ -319,3 +319,49 @@ FROM
 	AND ms.alumno_id = mm.alumno_id 
 WHERE
 	mm.alumno_id IS NULL;
+
+
+-- Eliminando la vista le_correolimpio y creando un procedimiento
+CREATE PROCEDURE le_datos_matriculados (@semestre VARCHAR(10))
+AS
+BEGIN
+    SELECT DISTINCT LOWER
+			( r.Alumno ) AS alumno,
+			TRIM ( a.Password ) AS password,
+			TRIM ( a.Nombre ) AS nombre,
+			CONCAT ( TRIM ( a.ApellidoPaterno ), ' ', TRIM ( a.ApellidoMaterno ) ) AS apellido,
+			REPLACE( a.Email, ' ', '' ) AS email
+			INTO #correo_limpio
+		FROM
+			dbo.Rendimiento AS r
+			INNER JOIN dbo.Alumno AS a ON r.Alumno = a.Alumno 
+		WHERE
+			r.Semestre = @semestre
+			
+			
+		SELECT DISTINCT
+			a.alumno,
+			a.password,
+			a.nombre,
+			a.apellido,
+			a.email 
+		FROM
+			#correo_limpio AS a 
+		WHERE
+			( a.email <> '' OR a.email IS NULL ) 
+			AND CHARINDEX( '@', a.email ) > 0 
+			AND CHARINDEX( '.', a.email, CHARINDEX( '@', a.email ) ) > 0 
+			AND CHARINDEX( ' ', a.email ) = 0 
+			AND PATINDEX( '%[,"()<>;[]]%', a.email ) = 0 
+		GROUP BY
+			a.email,
+			a.alumno,
+			a.password,
+			a.nombre,
+			a.apellido
+			
+			
+		DROP TABLE IF EXISTS #correo_limpio
+			
+END
+

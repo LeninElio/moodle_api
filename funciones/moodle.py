@@ -138,6 +138,7 @@ def crear_categoria(cat_nombre, idnumber, cat_desc):
 
     params = {**global_params, **list_params}
     response = session.post(f"{url}", params=params).json()
+
     return response
 
 
@@ -152,7 +153,7 @@ def crear_sub_categoria(cat_nombre, idnumber, cat_desc, parent_id):
 
     params = {**global_params, **list_params}
     response = session.post(f"{url}", params=params).json()
-    # session.post(f"{url}", params=params).json()
+    
     return response
 
 
@@ -393,5 +394,29 @@ def concurr_desmatricular_usuario(resultados):
         "enrolments[0][courseid]": resultado[0],
         "enrolments[0][userid]": resultado[1]
     } for resultado in resultados]
+
+    return list_params
+
+
+def ocultar_cursos(respuestas):
+    list_params = [{
+        "wstoken": api_key,
+        "moodlewsrestformat": "json",
+        "wsfunction": "core_course_update_courses",
+        "courses[0][id]": respuesta,
+        "courses[0][visible]": 0
+    } for respuesta in respuestas]
+
+    return list_params
+
+
+def listar_cursos_por_idcurso(respuestas):
+    list_params = [{
+        "wstoken": api_key,
+        "moodlewsrestformat": "json",
+        "wsfunction": "core_course_get_courses_by_field",
+        "field": "id",
+        "value": respuesta
+    } for respuesta in respuestas]
 
     return list_params
