@@ -1,111 +1,4 @@
-# en este archivo estan algunas funciones pensadas inicialmente
-
-# from funciones import moodle, sql
-# import concurrent.futures
-# import time
-# import csv
-
-
-# def lista_cursos_moodle():
-#     query = f'''select parent from sva.le_ciclo'''
-
-#     resultados = sql.lista_query(query)
-#     lista_cursos = moodle.cursos_concurr_categoria(resultados)
-
-#     with concurrent.futures.ThreadPoolExecutor() as executor:
-#         cursos = list(executor.map(moodle.creacion_concurrente, lista_cursos))
-
-#     with open("./data/temp_data.csv", "a", newline='') as file:
-#         writer = csv.writer(file)
-#         for curso in cursos:
-#             for shortname in curso['courses']:
-#                 writer.writerow([shortname['shortname']])
-
-
-# lista_cursos_moodle()
-
-
-# obtener id de alumnos y cursos de moodle con username
-# @principal.calcular_tiempo
-# def obtener_alumnos_cursos():
-#     query = f'''
-#     SELECT
-#         LOWER(r.Alumno) AS alumno,
-#         concat ( c.Nombre, ', ', e.Abreviatura, ', ', cp.Semestre, ', ', cp.Seccion ) AS idcurso 
-#     FROM
-#         dbo.Rendimiento AS r
-#         INNER JOIN dbo.Curso AS c ON r.Curricula = c.Curricula 
-#         AND r.Curso = c.Curso 
-#         AND r.Escuela = c.Escuela
-#         INNER JOIN dbo.CursoProgramado AS cp ON c.Curricula = cp.Curricula 
-#         AND c.Curso = cp.Curso 
-#         AND c.Escuela = cp.Escuela 
-#         AND r.Semestre = cp.Semestre 
-#         AND r.Seccion = cp.Seccion
-#         INNER JOIN dbo.Escuela AS e ON cp.Escuela = e.Escuela 
-#     WHERE
-#         r.Semestre = '2020-1';
-#     '''
-
-#     resultados = sql.lista_query(query)
-#     lista_cursos = moodle.lista_concurr_byshortname(resultados)
-#     lista_alumnos = moodle.lista_concurr_byusername(resultados)
-
-#     with concurrent.futures.ThreadPoolExecutor() as executor:
-#         cursos = list(executor.map(moodle.creacion_concurrente, lista_cursos))
-#         alumnos = list(executor.map(moodle.creacion_concurrente, lista_alumnos))
-
-#     with open("./test_data/temp_data.txt", "a", encoding='utf-8') as file:
-#         for matricula in zip(alumnos, cursos):
-#             file.write(str(matricula) + "\n")
-
-
-# obtener_alumnos_cursos()
-
-
-# listar datos de txt con open
-# @principal.calcular_tiempo
-# def conwith():
-#     with open('./test_data/temp_data.txt', 'r', encoding='utf-8') as file:
-#         datos = file.readlines()
-#         resultados = [[int(x) for x in dato.split(',')] for dato in datos]
-    
-#     return resultados
-
-# # print(resultado)
-
-
-# Listar datos de txt con pandas
-# @principal.calcular_tiempo
-# def pandita():
-#     df = pd.read_csv('./test_data/temp_data.txt', header=None, names=['A', 'B'])
-#     lista = df.values.tolist()
-#     return lista
-
-
-# conwith()
-# pandita()
-
-
-# def listar_datos_txt():
-#     with open('./test_data/temp_data_copy.txt', 'r', encoding='utf-8') as archivo:
-#         datos_objeto = [eval(linea) for linea in archivo]
-
-#     for obj in datos_objeto:
-#         print(obj)
-#         # try:
-#         #     id = obj[0]['users'][0]['id']
-#         #     username = obj[0]['users'][0]['username']
-#         #     email = obj[0]['users'][0]['email']
-#         #     course_id = obj[1]['courses'][0]['id']
-#         #     fullname = obj[1]['courses'][0]['fullname']
-#         #     print(id, username, email, course_id, fullname)
-#         # except (KeyError, IndexError):
-#         #     print('Error: objeto no tiene la estructura esperada')
-#         #     continue
-
-
-# listar_datos_txt()
+""" Pruebas de funciones antes de incluirlas a las funciones de la app """
 
 from funciones import moodle, sql
 from concurrent.futures import ThreadPoolExecutor
@@ -242,3 +135,162 @@ def insertar_matriculas_bd(matriculas):
         sql.insertar_datos('sva.le_maticulas_moodle', data)
 
     return 'Completo'
+
+
+def lista_cursospor_id(resultados):
+    list_params = [{
+        "wstoken": api_key,
+        "moodlewsrestformat": "json",
+        "wsfunction": "core_enrol_get_users_courses",
+        "userid": resultado
+    } for resultado in resultados]
+
+    return list_params
+
+
+def idcursos_por_id(id):
+    list_params = {
+        "wsfunction": "core_enrol_get_users_courses",
+        "userid": id
+    }
+
+    params = {**global_params, **list_params, "moodlewsrestformat": "json"}
+    response = session.get(f"{url}", params=params).json()
+    retorno = [curso['id'] for curso in response]
+    return retorno
+
+
+def cursos_por_id(id):
+    list_params = {
+        "wsfunction": "core_enrol_get_users_courses",
+        "userid": id
+    }
+
+    params = {**global_params, **list_params, "moodlewsrestformat": "json"}
+    response = session.get(f"{url}", params=params).json()
+    retorno = [curso['shortname'] for curso in response]
+    return retorno
+
+
+# roleid toma por defecto el valor de 5 = student, 3 = docente con permiso de edicion 
+def matricular_usuario(username, course_shortname, roleid = 5):
+    user_id = iduser_por_username(username)
+    course_id = idcourse_por_shortname(course_shortname)
+
+    list_params = {
+        "wsfunction": "enrol_manual_enrol_users",
+        "enrolments[0][roleid]": roleid,
+        "enrolments[0][courseid]": course_id,
+        "enrolments[0][userid]": user_id
+    }
+
+    params = {**global_params, **list_params}
+    response = session.post(f"{url}", params=params).json()
+    return response
+
+
+def desmatricular_usuario(username, course_shortname):
+    user_id = iduser_por_username(username)
+    course_id = idcourse_por_shortname(course_shortname)
+
+    list_params = {
+        "wsfunction": "enrol_manual_unenrol_users",
+        "enrolments[0][courseid]": course_id,
+        "enrolments[0][userid]": user_id
+    }
+
+    params = {**global_params, **list_params}
+    response = session.post(f"{url}", params=params).json()
+    return response
+
+
+def crear_usuario(username, password, firstname, lastname, email):
+    list_params = {
+        "wsfunction": "core_user_create_users",
+        "users[0][username]": username,
+        "users[0][password]": password,
+        "users[0][firstname]": firstname,
+        "users[0][lastname]": lastname,
+        "users[0][email]": email
+    }
+
+    params = {**global_params, **list_params}
+    response = session.post(f"{url}", params=params).json()
+    return response
+
+
+def crear_curso(fullname, shortname, category_id):
+    list_params = {
+        "wsfunction": "core_course_create_courses",
+        "courses[0][fullname]": fullname,
+        "courses[0][shortname]": shortname,
+        "courses[0][categoryid]": category_id,
+        "courses[0][format]": "weeks"
+    }
+
+    params = {**global_params, **list_params}
+    response = session.post(f"{url}", params=params).json()
+    return response
+
+
+def idcourse_por_shortname(shortname):
+    list_params = {
+        "wsfunction": "core_course_get_courses_by_field",
+        "field": "shortname",
+        "value": shortname
+    }
+
+    params = {**global_params, **list_params}
+    response = session.get(f"{url}", params=params).json()
+    retorno = [course['id'] for course in response['courses']]
+    return retorno[0]
+
+
+def iduser_por_username(username):
+    list_params = {
+        "wsfunction": "core_user_get_users",
+        "criteria[0][key]": "username",
+        "criteria[0][value]": username
+    }
+
+    params = {**global_params, **list_params}
+    response = session.get(f"{url}", params=params).json()
+    retorno = [user['id'] for user in response['users']]
+    return retorno[0]
+
+
+def listar_sub_categorias(parent_id):
+    list_params = {
+        "wsfunction": "core_course_get_categories",
+        "criteria[0][key]": "parent",
+        "criteria[0][value]": parent_id
+    }
+
+    params = {**global_params, **list_params}
+    response = session.get(f"{url}", params=params).json()
+    retorno = [(cat['id'], cat['name']) for cat in response]
+    return retorno
+
+
+def listar_categorias():
+    list_params = {
+        "wsfunction": "core_course_get_categories"
+    }
+
+    params = {**global_params, **list_params}
+    response = session.get(f"{url}", params=params).json()
+    retorno = [(cat['id'], cat['name']) for cat in response]
+    return retorno
+
+
+def cursos_por_categoria(id):
+    list_params = {
+        "wsfunction": "core_course_get_courses_by_field",
+        "field": "category",
+        "value": id
+    }
+
+    params = {**global_params, **list_params}
+    response = session.get(f"{url}", params=params).json()
+    retorno = [curso['shortname'] for curso in response['courses']]
+    return retorno

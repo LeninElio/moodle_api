@@ -147,3 +147,7 @@ pip-selfcheck.json
 private/
 test_data/
 dot.py
+
+ asincrona/
+ test_functions/
+ test.py

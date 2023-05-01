@@ -189,12 +189,12 @@ GO
 -- Insercion de datos a la tabla le_curso desde los cursosprogramados
 INSERT INTO sva.le_cursos (nombrecompleto, nombrecorto, categoriaid, fechainicio, semestre, idcurso)
 SELECT
-	concat ( cp.Semestre, ', ', c.Nombre, ', ', e.Abreviatura, ', ', cp.Seccion ) AS nombrecompleto,
-	concat ( c.Nombre, ', ', e.Abreviatura, ', ', cp.Semestre, ', ', cp.Seccion ) AS nombrecorto,
-	lc.parent as categoriaid,
-	DATEDIFF(SECOND, '1970-01-01 00:00:00.0', '2023-04-26 00:00:00.0') as fechainicio,
+	concat ( cp.Semestre, ', ', c.Nombre, ', ', c.Curricula, ', ',  e.Abreviatura, ', ', cp.Seccion ) AS nombrecompleto,
+	concat ( c.Nombre, ', ', e.Abreviatura, ', ', c.Curricula, ', ', cp.Semestre, ', ', cp.Seccion ) AS nombrecorto,
+	lc.parent AS categoriaid,
+	DATEDIFF( SECOND, '1970-01-01 00:00:00.0', '2023-04-26 00:00:00.0' ) AS fechainicio,
 	cp.Semestre,
-	concat (cp.Semestre, '-', le.idesc, c.Curricula, cp.Seccion, '-', c.Curso) as idcurso
+	concat ( cp.Semestre, '-', le.idesc, c.Curricula, cp.Seccion, '-', c.Curso ) AS idcurso 
 FROM
 	dbo.CursoProgramado AS cp
 	INNER JOIN dbo.Curso AS c ON cp.Curricula = c.Curricula 
@@ -203,9 +203,12 @@ FROM
 	INNER JOIN sva.le_escuela AS le ON c.Escuela = le.idesc
 	INNER JOIN sva.le_ciclo AS lc ON le.parent = lc.idescparent 
 	AND c.Ciclo = lc.idciclo
-	INNER JOIN dbo.Escuela AS e ON c.Escuela = e.Escuela 
+	INNER JOIN dbo.Escuela AS e ON c.Escuela = e.Escuela
+	INNER JOIN sva.le_semestre AS ls ON le.semestre = ls.id 
+	AND cp.Semestre = ls.nombre 
 WHERE
-	cp.Semestre = '2020-1'
+	cp.Semestre = '2019-1'
+	
 
 
 -- Timestamp to date
@@ -297,16 +300,20 @@ DROP TABLE IF EXISTS #matricula_sga;
 
 SELECT
 	lm.curso_id,
-	lm.alumno_id INTO #matricula_moodle 
+	lm.alumno_id 
+-- 	INTO #matricula_moodle 
 FROM
 	sva.le_maticulas_moodle lm 
+WHERE 
+	lm.semestre_id = 15
 GROUP BY
 	lm.curso_id,
 	lm.alumno_id;
+	
 
 CREATE TABLE #matricula_sga ( curso_id INT, alumno_id INT );
 
-INSERT INTO #matricula_sga EXEC le_matriculados '2020-1';
+INSERT INTO #matricula_sga EXEC le_matriculados '2019-1';
 
 SELECT
 	ms.curso_id AS curso_sga,
@@ -315,10 +322,26 @@ SELECT
 	mm.alumno_id AS alumno_moodle 
 FROM
 	#matricula_sga ms
-	LEFT JOIN #matricula_moodle mm ON ms.curso_id = mm.curso_id 
+	LEFT JOIN #matricula_moodle mm 
+	ON ms.curso_id = mm.curso_id 
 	AND ms.alumno_id = mm.alumno_id 
 WHERE
 	mm.alumno_id IS NULL;
+	
+
+SELECT
+	s.curso_id,
+	s.alumno_id,
+	m.curso_id,
+	m.alumno_id
+FROM
+	#matricula_sga AS s
+	RIGHT JOIN #matricula_moodle AS m ON s.curso_id = m.curso_id 
+	AND s.alumno_id = m.alumno_id 
+WHERE
+	s.curso_id IS NULL 
+	AND s.alumno_id IS NULL;
+
 
 
 -- Eliminando la vista le_correolimpio y creando un procedimiento

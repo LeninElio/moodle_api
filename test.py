@@ -1,40 +1,52 @@
-from funciones import moodle, sql, funciones
-from concurrent.futures import ThreadPoolExecutor 
-import pandas as pd
+from concurrent.futures import ThreadPoolExecutor
+import requests
+from funciones import decorador, moodle, sql
 
 
-@funciones.calcular_tiempo
+@decorador.calcular_tiempo
 def desmatricular_usuarios():
-    query = f''' EXEC le_matriculados '2020-1', '161.0704.574' '''
-    
+    """
+    Esta función recupera una lista de usuarios inscritos, intenta cancelar su inscripción al mismo
+    tiempo mediante una API de Moodle y devuelve los errores encontrados durante el proceso.
+
+    :return: ya sea las respuestas de las llamadas desmatricular_usuario concurrentes o un error 
+    si hay una excepción de solicitudes.
+    """
+    query = '''EXEC le_matriculados '2020-1', '161.0704.574' '''
     resultados = sql.lista_query(query)
 
     try:
         if resultados != []:
-
             list_params = moodle.concurr_desmatricular_usuario(resultados)
 
             with ThreadPoolExecutor() as executor:
                 responses = list(executor.map(moodle.creacion_concurrente, list_params))
 
             return responses
-        else:
-            print('No hay datos')
 
-    except Exception as e:
-            return e
+    except requests.exceptions.RequestException as error:
+        return error
 
 
-@funciones.calcular_tiempo_arg
+@decorador.calcular_tiempo_arg
 def desmatricular_usuario_username(username):
-    query = f'''SELECT moodle_id FROM dbo.Alumno WHERE Alumno='{username}' '''
+    """
+    Esta función da de baja a un usuario de sus cursos en Moodle utilizando su nombre de usuario.
     
+    :param username: El nombre de usuario del estudiante que necesita ser dado de baja de sus cursos
+    
+    :return: ya sea una cadena "Creo que no existe ese alumno" si el alumno no existe en la base de
+    datos, o una lista de respuestas de un proceso simultáneo de cancelación de la inscripción del
+    alumno en sus cursos en Moodle. Si hay un error con las solicitudes realizadas durante el 
+    proceso concurrente, la función devolverá el mensaje de error.
+    """
+    query = f'''SELECT moodle_id FROM dbo.Alumno WHERE Alumno='{username}' '''
     alumno = sql.lista_query_uno(query)
 
     if alumno is None:
-         return print('Creo no existe ese alumno')
+        return 'Creo no existe ese alumno'
 
-    cursos = moodle.idcursos_por_id(alumno)
+    cursos = alumno
     cursos = [(curso, alumno) for curso in cursos]
 
     try:
@@ -47,120 +59,34 @@ def desmatricular_usuario_username(username):
 
             return responses
 
-        else:
-            print('No hay cursos')
-
-    except Exception as e:
-            return e
+    except requests.exceptions.RequestException as error:
+        return error
 
 
-# funcion que permite obtener a los alumnos y sus cursos matriculados a partir de un id curso
-# para muchos datos no es optimo
-@funciones.calcular_tiempo
+@decorador.calcular_tiempo
 def obtener_matriculas_moodle():
-    # query = "SELECT top 3 lc.id_moodle from sva.le_cursos lc"
+    """
+    Esta función obtiene ID de cursos de Moodle y realiza solicitudes simultáneas para crear cursos.
     
+    :return: ya sea una lista de respuestas de una solicitud de API de Moodle o una cadena 
+    que indica que no hay cursos o un error probable.
+    """
+    # query = "SELECT top 3 lc.id_moodle from sva.le_cursos lc"
     # cursos = sql.lista_query_especifico(query)
     cursos = [439]
 
     try:
-        if cursos != []:
-
+        if cursos:
             list_params = moodle.async_peticion_por_idcurso(cursos)
-            
+
             with ThreadPoolExecutor() as executor:
                 responses = list(executor.map(moodle.creacion_concurrente, list_params))
 
-            matriculas = [(cursos['id'], matriculados['id']) for resultado in responses for matriculados in resultado for cursos in matriculados['enrolledcourses']]
+            return responses
 
-            # insertar_matriculas_bd(matriculas)
-            print(matriculas)
-
-        else:
-            print('No hay cursos')
-
-    except Exception as e:
-            return e
+    except requests.exceptions.RequestException as re_ex:
+        return f'Probable error, {re_ex}'
 
 
-# obtener_matriculas_moodle()
-# desmatricular_usuarios()(
-# desmatricular_usuario_username('161.0704.54')('131.2502.153')
-
-# def mifuncion(param):
-#     print(param)
-#     return mifuncion
-
-
-# mifuncion('A')('B')
-
-
-
-@funciones.calcular_tiempo_arg
-def ocultar_cursos_moodle(semestre, lista = False):
-    # Lista es un valor booleano para saber que el primer parametro que se esta enviando es una lista
-    if lista and not isinstance(semestre, list):
-        return print(f'{semestre} no es una lista valida.')
-
-    if not lista:
-        query = f"SELECT lc.id_moodle from sva.le_cursos lc WHERE lc.semestre = '{semestre}'"
-        cursos = sql.lista_query_especifico(query)
-    else: 
-        cursos = semestre
-
-    try:
-        if cursos != []:
-
-            list_params = moodle.ocultar_cursos(cursos)
-            
-            with ThreadPoolExecutor() as executor:
-                executor.map(moodle.creacion_concurrente, list_params)
-
-            return 'Cursos ocultados correctamente.'
-
-        else:
-            return 'No hay mas cursos por ocultar.'
-
-    except Exception as e:
-            return f'Error al finalizar el semestre, error: {e}'
-
-
-# listax = [2, 10, 3, 6, 7]
-
-# ocultar = ocultar_cursos_moodle('2020-1')
-# print(ocultar)
-
-
-@funciones.calcular_tiempo_arg
-def obtener_visibilidad_curso(semestre):
-    query = f"SELECT lc.id_moodle from sva.le_cursos lc WHERE lc.semestre = '{semestre}'"
-    
-    cursos = sql.lista_query_especifico(query)
-    try:
-        if cursos != []:
-
-            list_params = moodle.listar_cursos_por_idcurso(cursos)
-            
-            with ThreadPoolExecutor() as executor:
-                respuestas = list(executor.map(moodle.creacion_concurrente, list_params))
- 
-            # ocultos = [respuesta['courses'][0]['id'] for respuesta in respuestas if respuesta['courses'] != [] if respuesta['courses'][0]['visible'] == 0]
-            
-            visibles = [respuesta['courses'][0]['id'] for respuesta in respuestas if respuesta['courses'] != [] if respuesta['courses'][0]['visible'] == 1]
-
-            # print('Ocultos: ', ocultos)
-            # print('Visibles: ', visibles)
-
-            ocultar_cursos_moodle(visibles, True)
-            
-            return f'Cantidad de cursos que aun estan visibles: {len(visibles)}'
-
-        else:
-            return 'No hay mas cursos para procesar.'
-
-    except Exception as e:
-            return f'Error en la obtencion de la visibilidad de cursos, error {e}'
-
-
-visibles = obtener_visibilidad_curso('2020-1')
-print(visibles)
+obtener = obtener_matriculas_moodle()
+print(obtener)
