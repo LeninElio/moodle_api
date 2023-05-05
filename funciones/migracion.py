@@ -840,3 +840,64 @@ def obtener_visibilidad_curso(semestre):
 
     except requests.exceptions.RequestException as error:
         return f'Error en la obtencion de la visibilidad de cursos, error {error}'
+
+
+@decorador.calcular_tiempo_arg
+def desmatricular_usuario_username(semestre, username):
+    """
+    Esta función da de baja a un usuario de sus cursos en Moodle utilizando su nombre de usuario.
+    
+    :param username: El nombre de usuario del estudiante que necesita ser dado de baja de sus cursos
+    
+    :return: ya sea una cadena "Creo que no existe ese alumno" si el alumno no existe en la base de
+    datos, o una lista de respuestas de un proceso simultáneo de cancelación de la inscripción del
+    alumno en sus cursos en Moodle. Si hay un error con las solicitudes realizadas durante el 
+    proceso concurrente, la función devolverá el mensaje de error.
+    """
+    query = f'''SELECT moodle_id FROM dbo.Alumno WHERE '{semestre}' AND Alumno='{username}' '''
+    alumno = sql.lista_query_uno(query)
+
+    if alumno is None:
+        return 'Creo no existe ese alumno'
+
+    cursos = alumno
+    cursos = [(curso, alumno) for curso in cursos]
+
+    try:
+        if cursos != []:
+
+            list_params = moodle.concurr_desmatricular_usuario(cursos)
+
+            with ThreadPoolExecutor() as executor:
+                responses = list(executor.map(moodle.creacion_concurrente, list_params))
+
+            return responses
+
+    except requests.exceptions.RequestException as error:
+        return f'Ocurrio un error al desmatricular a un estudiante, error: {error}'
+
+
+@decorador.calcular_tiempo
+def desmatricular_usuarios():
+    """
+    Esta función recupera una lista de usuarios inscritos, intenta cancelar su inscripción al mismo
+    tiempo mediante una API de Moodle y devuelve los errores encontrados durante el proceso.
+
+    :return: ya sea las respuestas de las llamadas desmatricular_usuario concurrentes o un error 
+    si hay una excepción de solicitudes.
+    """
+    query = '''EXEC le_matriculados '2020-1', '161.0704.574' '''
+    resultados = sql.lista_query(query)
+
+    try:
+        if resultados != []:
+            list_params = moodle.concurr_desmatricular_usuario(resultados)
+
+            with ThreadPoolExecutor() as executor:
+                responses = list(executor.map(moodle.creacion_concurrente, list_params))
+
+            return responses
+
+    except requests.exceptions.RequestException as error:
+        return error
+    
