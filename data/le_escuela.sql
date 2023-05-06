@@ -188,13 +188,14 @@ GO
 
 -- Insercion de datos a la tabla le_curso desde los cursosprogramados
 INSERT INTO sva.le_cursos (nombrecompleto, nombrecorto, categoriaid, fechainicio, semestre, idcurso)
-SELECT
-	concat ( cp.Semestre, ', ', c.Nombre, ', ', c.Curricula, ', ',  e.Abreviatura, ', ', cp.Seccion ) AS nombrecompleto,
+SELECT DISTINCT
+	concat ( cp.Semestre, ', ', c.Nombre, ', ', c.Curricula, ', ', e.Abreviatura, ', ', cp.Seccion ) AS nombrecompleto,
 	concat ( c.Nombre, ', ', e.Abreviatura, ', ', c.Curricula, ', ', cp.Semestre, ', ', cp.Seccion ) AS nombrecorto,
 	lc.parent AS categoriaid,
 	DATEDIFF( SECOND, '1970-01-01 00:00:00.0', '2023-04-26 00:00:00.0' ) AS fechainicio,
 	cp.Semestre,
-	concat ( cp.Semestre, '-', le.idesc, c.Curricula, cp.Seccion, '-', c.Curso ) AS idcurso 
+-- 	concat ( cp.Semestre, '-', le.idesc, '-', c.Curricula, '-', cp.Seccion, '-', c.Curso ) AS idcurso,
+	concat ( cp.Semestre, '-', CAST ( c.id AS VARCHAR ), '-', CAST ( cp.CursoProgramado AS VARCHAR )) AS idcurso
 FROM
 	dbo.CursoProgramado AS cp
 	INNER JOIN dbo.Curso AS c ON cp.Curricula = c.Curricula 
@@ -207,9 +208,8 @@ FROM
 	INNER JOIN sva.le_semestre AS ls ON le.semestre = ls.id 
 	AND cp.Semestre = ls.nombre 
 WHERE
-	cp.Semestre = '2019-1'
+	cp.Semestre = '2020-1' and cp.tipo != 'H';
 	
-
 
 -- Timestamp to date
 SELECT DATEADD(SECOND, 1682553540, '1970-01-01 00:00:00.0')

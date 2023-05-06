@@ -1,8 +1,9 @@
 # Importando la función `migracion` desde el módulo `funciones` y renombrándola como `mg`.
+
 from funciones import migracion as mg
 
-SEMESTRE_ANTERIOR = '2019-2'
-SEMESTRE = '2019-1'
+SEMESTRE_ANTERIOR = '2019-1'
+SEMESTRE = '2020-2'
 
 """
 Ejecutar la app principal
@@ -40,8 +41,8 @@ if __name__ == "__main__":
     # print(ciclos_creados)
 
     # 5. Migracion de cursos a nivel de base de datos
-    # migracion = mg.migracion_cursos_bd(semestre, '2023-05-04')
-    # print(migracion)
+    # migrar = mg.migracion_cursos_bd(SEMESTRE, '2023-05-04')
+    # print(migrar)
 
     # 6. Creacion de cursos
     # cursos_creados = mg.crear_cursos(SEMESTRE)

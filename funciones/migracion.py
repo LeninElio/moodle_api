@@ -182,6 +182,7 @@ def crear_ciclos(semestre):
         AND le.semestre = '{semestre_val[0]}' 
     WHERE
         cp.Semestre = '{semestre}' 
+        AND cp.tipo != 'H' 
     GROUP BY
         cp.Escuela,
         c.Ciclo,
@@ -191,18 +192,18 @@ def crear_ciclos(semestre):
 
     try:
         resultados = sql.lista_query(query)
-        for resultado in resultados:
-            ciclos = moodle.crear_sub_categoria(resultado[1], resultado[3], resultado[1], resultado[2])
+        for resul in resultados:
+            ciclos = moodle.crear_sub_categoria(resul[1], resul[3], resul[1], resul[2])
 
             if 'exception' in ciclos:
                 return f"Error en la creacion de ciclos, {ciclos['message']}"
 
             else:
                 data = {
-                    'numeracion': resultado[3], 
+                    'numeracion': resul[3], 
                     'parent': ciclos[0]['id'], 
-                    "idescparent": resultado[2], 
-                    "idciclo": resultado[1]
+                    "idescparent": resul[2], 
+                    "idciclo": resul[1]
                 }
                 sql.insertar_datos('sva.le_ciclo', data)
 
@@ -243,7 +244,7 @@ def migracion_cursos_bd(semestre = None, inicioclases = None):
                 lc.parent AS categoriaid,
                 DATEDIFF( SECOND, '1970-01-01 00:00:00.0', '{fecha_verificada}' ) AS fechainicio,
                 cp.Semestre,
-                concat ( cp.Semestre, '-', le.idesc, c.Curricula, cp.Seccion, '-', c.Curso ) AS idcurso 
+                concat ( cp.Semestre, '-', CAST ( c.id AS VARCHAR ), '-', CAST ( cp.CursoProgramado AS VARCHAR )) AS idcurso
             FROM
                 dbo.CursoProgramado AS cp
                 INNER JOIN dbo.Curso AS c ON cp.Curricula = c.Curricula 
@@ -257,7 +258,7 @@ def migracion_cursos_bd(semestre = None, inicioclases = None):
                 INNER JOIN sva.le_semestre AS ls ON le.semestre = ls.id 
                 AND cp.Semestre = ls.nombre 
             WHERE
-                cp.Semestre = '{semestre}'
+                cp.Semestre = '{semestre}' AND cp.tipo != 'H'
         """)
 
         return 'Migracion de cursos completo.'
@@ -696,7 +697,8 @@ def insertar_matriculas_bd(matriculas, semestre):
         for matricula in matriculas:
             data = {'curso_id': matricula[0], 'alumno_id': matricula[1], 'semestre_id': semestre}
 
-            cursor.execute('INSERT INTO sva.le_maticulas_moodle (curso_id, alumno_id, semestre_id) VALUES (%s, %s, %s)', (data['curso_id'], data['alumno_id'], data['semestre_id']))
+            cursor.execute('INSERT INTO sva.le_maticulas_moodle (curso_id, alumno_id, semestre_id) VALUES (%s, %s, %s)',
+                          (data['curso_id'], data['alumno_id'], data['semestre_id']))
 
     return 'Se completo la insersion de datos obtenidos.'
 
@@ -829,7 +831,7 @@ def obtener_visibilidad_curso(semestre):
             with ThreadPoolExecutor() as executor:
                 respuestas = list(executor.map(moodle.creacion_concurrente, list_params))
 
-            visibles = [respuesta['courses'][0]['id'] for respuesta in respuestas if respuesta['courses'] != [] if respuesta['courses'][0]['visible'] == 1]
+            visibles = [resp['courses'][0]['id'] for resp in respuestas if resp['courses'] != [] if resp['courses'][0]['visible'] == 1]
 
             ocultar_cursos_moodle(visibles, True)
 
