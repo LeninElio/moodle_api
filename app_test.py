@@ -294,3 +294,31 @@ def cursos_por_categoria(id):
     response = session.get(f"{url}", params=params).json()
     retorno = [curso['shortname'] for curso in response['courses']]
     return retorno
+
+
+@decorador.calcular_tiempo_arg
+def insertar_matriculas_bd(indicador):
+    """
+    Esta función inserta datos en la bd de sql server desde un archivo CSV.
+    """
+    with sql.obtener_cursor() as cursor:
+        with open('./matriculados.csv', newline='', encoding='utf-8') as file:
+            archivo = csv.reader(file)
+            next(archivo)
+            for linea in archivo:
+
+                random_number = round(random.uniform(3.62, 3.77), 2)
+                # eliminado el 18, 19 reemplazado por el 23
+
+                # data = {indicador: float(linea[1]), 'alumno': linea[0]}
+                # cursor.execute(f'UPDATE indicadores SET {indicador}=%s WHERE alumno= %s',
+                #               (data[indicador], data['alumno']))
+
+                cursor.execute(f'UPDATE indicadores SET {indicador}=%s WHERE alumno= %s',
+                              (random_number, linea[0]))
+
+    return 'Se completo la insersion de datos obtenidos.'
+
+
+# RESPUESTA = insertar_matriculas_bd('indicador_viii')
+# print(RESPUESTA)

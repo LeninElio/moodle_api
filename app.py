@@ -1,21 +1,24 @@
 # Importando la función `migracion` desde el módulo `funciones` y renombrándola como `mg`.
 
+from concurrent.futures import ThreadPoolExecutor
 from funciones import migracion as mg
+from funciones import moodle
 
 SEMESTRE_ANTERIOR = '2019-1'
 SEMESTRE = '2020-2'
 
 """
 Ejecutar la app principal
-Este código es el programa principal que ejecuta una serie de funciones desde un módulo 
-llamado "funciones". Estas funciones están relacionadas con la migración de cursos y usuarios 
-en una plataforma Moodle para un semestre específico. El código incluye varias llamadas a 
+Este código es el programa principal que ejecuta una serie de funciones desde un módulo
+llamado "funciones". Estas funciones están relacionadas con la migración de cursos y usuarios
+en una plataforma Moodle para un semestre específico. El código incluye varias llamadas a
 funciones comentadas que se pueden descomentar y ejecutar según las necesidades específicas
-del proceso de migración. La llamada de función final imprime las inscripciones de Moodle 
+del proceso de migración. La llamada de función final imprime las inscripciones de Moodle
 restantes para el semestre.
 """
 
 if __name__ == "__main__":
+    pass
     # A. Finalizar semestre anterior (ocultar los cursos de la visibilidad de estudiantes)
     # ocultar = mg.ocultar_cursos_moodle(SEMESTRE_ANTERIOR)
     # print(ocultar)
@@ -67,5 +70,26 @@ if __name__ == "__main__":
     # print(matricular)
 
     # 8.1. Probablemente algunas matriculas fallen, en este caso se hace una busqueda esos
-    matriculas_restante = mg.obtener_matriculas_moodle_pandas(SEMESTRE)
-    print(matriculas_restante)
+    # matriculas_restante = mg.obtener_matriculas_moodle_pandas(SEMESTRE)
+    # print(matriculas_restante)
+
+
+def listar_tareas():
+    """
+    Obtener la lista de tareas
+    """
+    cursos = [9899, 9890]
+    peticion = moodle.concurr_obtener_tareas(cursos)
+    with ThreadPoolExecutor() as executor:
+        responses = list(executor.map(moodle.creacion_concurrente, peticion))
+
+    return [
+        (tareas['id'], tarea['id'])
+        for dato in responses if dato['courses'] != []
+        for tareas in dato['courses']
+        for tarea in tareas['assignments']
+        ]
+
+
+tareas = listar_tareas()
+print(tareas)

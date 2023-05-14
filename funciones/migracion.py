@@ -12,11 +12,11 @@ from funciones import decorador, moodle, sql
 @decorador.calcular_tiempo_arg
 def crear_semestre(semestre):
     """
-    Esta función crea una nueva categoría de semestre en Moodle e inserta sus datos en una tabla 
+    Esta función crea una nueva categoría de semestre en Moodle e inserta sus datos en una tabla
     de base de datos SQL.
-    
-    :param semestre: El parámetro "semestre" es una variable que representa el semestre académico 
-    para el cual se está creando una categoría. Se utiliza para generar el nombre y la 
+
+    :param semestre: El parámetro "semestre" es una variable que representa el semestre académico
+    para el cual se está creando una categoría. Se utiliza para generar el nombre y la
     descripción de la categoría.
 
     :return: un mensaje que indica si el semestre se creó con éxito o no.
@@ -32,9 +32,9 @@ def crear_semestre(semestre):
 
         else:
             data = {
-                'nombre': semestre, 
-                'nombre_completo': name, 
-                'descripcion': desc, 
+                'nombre': semestre,
+                'nombre_completo': name,
+                'descripcion': desc,
                 'parent': nuevo_semestre[0]['id']
             }
 
@@ -50,16 +50,16 @@ def crear_facultades(semestre):
     """
     Esta función crea subcategorías en Moodle para cada facultad activa en un semestre determinado e
     inserta datos en una tabla de base de datos.
-    
+
     :param semestre: El parámetro "semestre" es una cadena que representa un semestre académico
     específico.
 
-    :return: un mensaje que indica si la creación de facultades fue exitosa o no. Si hubo un error, 
+    :return: un mensaje que indica si la creación de facultades fue exitosa o no. Si hubo un error,
     el mensaje incluirá detalles sobre el error.
     """
     query = f'''
     SELECT
-        CONCAT('{semestre}', '-', f.Facultad) cat_num, 
+        CONCAT('{semestre}', '-', f.Facultad) cat_num,
         CONCAT('FACULTAD DE ', f.Descripcion) as cat_name,
         CONCAT('CATEGORIA DE LA FACULTAD DE ', f.Descripcion) as cat_desc,
         f.Facultad
@@ -85,9 +85,9 @@ def crear_facultades(semestre):
 
             else:
                 data = {
-                    'semestre': semestre_val[0], 
-                    'numeracion': num, 
-                    'parent': facultades[0]['id'], 
+                    'semestre': semestre_val[0],
+                    'numeracion': num,
+                    'parent': facultades[0]['id'],
                     "idfac": idfac
                 }
 
@@ -103,8 +103,8 @@ def crear_facultades(semestre):
 def crear_escuelas(semestre):
     """
     Esta función crea categorías en Moodle basadas en información de la base de datos.
-    
-    :param semestre: El parámetro "semestre" es una cadena que representa el semestre académico 
+
+    :param semestre: El parámetro "semestre" es una cadena que representa el semestre académico
     para el cual se deben crear las escuelas.
 
     :return: un mensaje que indica si la creación de escuelas fue exitosa o no. Si hubo un error, el
@@ -121,7 +121,7 @@ def crear_escuelas(semestre):
     FROM
         dbo.Escuela AS e
         INNER JOIN sva.le_facultad AS f ON e.Facultad = f.idfac
-    where e.Activo = '1' AND f.semestre = '{semestre_val[0]}' 
+    where e.Activo = '1' AND f.semestre = '{semestre_val[0]}'
     '''
 
     try:
@@ -140,9 +140,9 @@ def crear_escuelas(semestre):
 
             else:
                 data = {
-                    'semestre': semestre_val[0], 
-                    'numeracion': num, 
-                    'parent': escuelas[0]['id'], 
+                    'semestre': semestre_val[0],
+                    'numeracion': num,
+                    'parent': escuelas[0]['id'],
                     "idesc": idesc
                 }
 
@@ -157,12 +157,12 @@ def crear_escuelas(semestre):
 def crear_ciclos(semestre):
     """
     Esta función crea ciclos en Moodle basados en información de una base de datos SQL.
-    
-    :param semestre: El parámetro "semestre" es una cadena que representa un semestre específico. 
+
+    :param semestre: El parámetro "semestre" es una cadena que representa un semestre específico.
     Se utiliza para recuperar información sobre los cursos ofrecidos en ese semestre y
     crear categorías correspondientes para esos cursos en un sistema de gestión de aprendizaje
 
-    :return: ya sea una cadena que indica que los ciclos se crearon con éxito o un mensaje de 
+    :return: ya sea una cadena que indica que los ciclos se crearon con éxito o un mensaje de
     error si hubo un error en el proceso.
     """
     semestre_val = sql.informacion_semestre(semestre)
@@ -172,22 +172,22 @@ def crear_ciclos(semestre):
         cp.Escuela,
         c.Ciclo,
         le.parent,
-        concat ( le.numeracion, '-', c.Ciclo ) AS numeracion 
+        concat ( le.numeracion, '-', c.Ciclo ) AS numeracion
     FROM
         dbo.CursoProgramado AS cp
-        INNER JOIN dbo.Curso AS c ON c.Curso = cp.Curso 
-        AND cp.Escuela = c.Escuela 
+        INNER JOIN dbo.Curso AS c ON c.Curso = cp.Curso
+        AND cp.Escuela = c.Escuela
         AND cp.Curricula = c.Curricula
-        INNER JOIN sva.le_escuela le ON le.idesc = cp.Escuela 
-        AND le.semestre = '{semestre_val[0]}' 
+        INNER JOIN sva.le_escuela le ON le.idesc = cp.Escuela
+        AND le.semestre = '{semestre_val[0]}'
     WHERE
-        cp.Semestre = '{semestre}' 
-        AND cp.tipo != 'H' 
+        cp.Semestre = '{semestre}'
+        AND cp.tipo != 'H'
     GROUP BY
         cp.Escuela,
         c.Ciclo,
         le.parent,
-        le.numeracion 
+        le.numeracion
     '''
 
     try:
@@ -200,9 +200,9 @@ def crear_ciclos(semestre):
 
             else:
                 data = {
-                    'numeracion': resul[3], 
-                    'parent': ciclos[0]['id'], 
-                    "idescparent": resul[2], 
+                    'numeracion': resul[3],
+                    'parent': ciclos[0]['id'],
+                    "idescparent": resul[2],
                     "idciclo": resul[1]
                 }
                 sql.insertar_datos('sva.le_ciclo', data)
@@ -214,15 +214,15 @@ def crear_ciclos(semestre):
 
 
 @decorador.calcular_tiempo_arg
-def migracion_cursos_bd(semestre = None, inicioclases = None):
+def migracion_cursos_bd(semestre=None, inicioclases=None):
     """
     Esta función migra cursos de una base de datos a otra, dado un semestre y una fecha de inicio.
-    
-    :param semestre: El semestre para el cual se están migrando los cursos. Es un parámetro 
+
+    :param semestre: El semestre para el cual se están migrando los cursos. Es un parámetro
     obligatorio.
 
     :param inicioclases: La fecha de inicio de clases del semestre en el formato "AAAA-MM-DD"
-    
+
     :return: un mensaje de cadena que indica el éxito o el fracaso del proceso de migración.
     """
     if semestre is None or inicioclases is None:
@@ -237,26 +237,32 @@ def migracion_cursos_bd(semestre = None, inicioclases = None):
         fecha_verificada = datetime.datetime.strptime(inicioclases, '%Y-%m-%d')
 
         sql.ejecutar(f"""
-            INSERT INTO sva.le_cursos (nombrecompleto, nombrecorto, categoriaid, fechainicio, semestre, idcurso)
+            INSERT INTO sva.le_cursos
+            (nombrecompleto, nombrecorto, categoriaid, fechainicio, semestre, idcurso)
             SELECT
-                concat ( cp.Semestre, ', ', c.Nombre, ', ', c.Curricula, ', ',  e.Abreviatura, ', ', cp.Seccion ) AS nombrecompleto,
-                concat ( c.Nombre, ', ', e.Abreviatura, ', ', c.Curricula, ', ', cp.Semestre, ', ', cp.Seccion ) AS nombrecorto,
+                concat (
+                    cp.Semestre, ', ', c.Nombre, ', ', c.Curricula,
+                    ', ',  e.Abreviatura, ', ', cp.Seccion ) AS nombrecompleto,
+                concat (
+                    c.Nombre, ', ', e.Abreviatura, ', ', c.Curricula,
+                    ', ', cp.Semestre, ', ', cp.Seccion ) AS nombrecorto,
                 lc.parent AS categoriaid,
                 DATEDIFF( SECOND, '1970-01-01 00:00:00.0', '{fecha_verificada}' ) AS fechainicio,
                 cp.Semestre,
-                concat ( cp.Semestre, '-', CAST ( c.id AS VARCHAR ), '-', CAST ( cp.CursoProgramado AS VARCHAR )) AS idcurso
+                concat ( cp.Semestre, '-', CAST ( c.id AS VARCHAR ), '-',
+                CAST ( cp.CursoProgramado AS VARCHAR )) AS idcurso
             FROM
                 dbo.CursoProgramado AS cp
-                INNER JOIN dbo.Curso AS c ON cp.Curricula = c.Curricula 
-                AND cp.Curso = c.Curso 
+                INNER JOIN dbo.Curso AS c ON cp.Curricula = c.Curricula
+                AND cp.Curso = c.Curso
                 AND cp.Escuela = c.Escuela
                 INNER JOIN sva.le_escuela AS le ON c.Escuela = le.idesc
-                AND le.semestre = {semestre_val[0]} 
-                INNER JOIN sva.le_ciclo AS lc ON le.parent = lc.idescparent 
+                AND le.semestre = {semestre_val[0]}
+                INNER JOIN sva.le_ciclo AS lc ON le.parent = lc.idescparent
                 AND c.Ciclo = lc.idciclo
                 INNER JOIN dbo.Escuela AS e ON c.Escuela = e.Escuela
-                INNER JOIN sva.le_semestre AS ls ON le.semestre = ls.id 
-                AND cp.Semestre = ls.nombre 
+                INNER JOIN sva.le_semestre AS ls ON le.semestre = ls.id
+                AND cp.Semestre = ls.nombre
             WHERE
                 cp.Semestre = '{semestre}' AND cp.tipo != 'H'
         """)
@@ -272,9 +278,9 @@ def crear_cursos(semestre):
     """
     Esta función crea cursos en Moodle para un semestre dado usando programación concurrente.
 
-    :param semestre: El parámetro "semestre" es una cadena que representa el semestre para 
-    el cual se están creando los cursos. 
-    
+    :param semestre: El parámetro "semestre" es una cadena que representa el semestre para
+    el cual se están creando los cursos.
+
     :return: un mensaje de cadena que dice "Cursos creados satisfactoriamente".
     """
     query = f'''
@@ -283,9 +289,9 @@ def crear_cursos(semestre):
         nombrecorto,
         categoriaid,
         fechainicio,
-        idcurso 
+        idcurso
     FROM
-        sva.le_cursos AS lc 
+        sva.le_cursos AS lc
     WHERE
         lc.Semestre = '{semestre}'
     '''
@@ -312,8 +318,8 @@ def crear_cursos(semestre):
 def crear_curso_restante_moodle(lista):
     """
     Esta función crea cursos de Moodle para una lista de cursos que aún no se han creado en Moodle.
-    
-    :param lista: El parámetro "lista" es una lista de cadenas que contienen los nombres de 
+
+    :param lista: El parámetro "lista" es una lista de cadenas que contienen los nombres de
     los cursos que se crearán en Moodle
 
     :return: un mensaje de cadena que indica si la creación de los cursos restantes en Moodle fue
@@ -323,10 +329,10 @@ def crear_curso_restante_moodle(lista):
 
     query = f'''
     SELECT
-        nombrecompleto, 
-        nombrecorto, 
-        categoriaid, 
-        fechainicio, 
+        nombrecompleto,
+        nombrecorto,
+        categoriaid,
+        fechainicio,
         idcurso
     FROM
         sva.le_cursos AS lc
@@ -349,9 +355,9 @@ def crear_curso_restante_moodle(lista):
 
 def insertar_idcurso_moodle_bd(alumnos):
     """
-    Esta función inserta los ID de los cursos de Moodle en una tabla de la base de datos y 
+    Esta función inserta los ID de los cursos de Moodle en una tabla de la base de datos y
     actualiza los registros correspondientes en otra tabla.
-    
+
     :param alumnos: Es una lista de tuplas que contiene el nombre de un curso y su ID de Moodle
     correspondiente
 
@@ -364,11 +370,11 @@ def insertar_idcurso_moodle_bd(alumnos):
         sql.insertar_datos('sva.le_courses_temp', data)
 
     sql.ejecutar("""
-        UPDATE lc 
-        SET lc.id_moodle = lct.id_moodle 
+        UPDATE lc
+        SET lc.id_moodle = lct.id_moodle
         FROM
             sva.le_cursos AS lc
-            INNER JOIN sva.le_courses_temp AS lct 
+            INNER JOIN sva.le_courses_temp AS lct
             ON lc.nombrecorto = lct.nombrecorto
     """)
 
@@ -380,12 +386,12 @@ def insertar_idcurso_moodle_bd(alumnos):
 def obtener_idcurso_pornombre(shortname):
     """
     Esta función de Python obtiene el ID de un curso por su nombre corto en Moodle.
-    
-    :param shortname: El nombre abreviado de un curso de Moodle, que es un identificador 
+
+    :param shortname: El nombre abreviado de un curso de Moodle, que es un identificador
     único para el curso
 
-    :return: una tupla con dos valores: el parámetro de entrada `shortname` y `False` 
-    si no hay cursos con ese shortname, o el `id` del primer curso que coincide con el 
+    :return: una tupla con dos valores: el parámetro de entrada `shortname` y `False`
+    si no hay cursos con ese shortname, o el `id` del primer curso que coincide con el
     shortname.
     """
     existe = moodle.async_idby_shortname(shortname)
@@ -400,22 +406,22 @@ def obtener_idcurso_pornombre(shortname):
 def corregir_cursos_noinsertados(semestre):
     """
     Esta función corrige los cursos que no se insertaron en Moodle consultando la base
-    de datos de cursos con un semestre específico y sin ID de Moodle, luego usa 
-    subprocesos múltiples para obtener la ID de Moodle para los cursos existentes 
+    de datos de cursos con un semestre específico y sin ID de Moodle, luego usa
+    subprocesos múltiples para obtener la ID de Moodle para los cursos existentes
     y crea los cursos restantes en Moodle.
-    
+
     :param semestre: El semestre para el cual los cursos necesitan ser corregidos.
 
     :return: una cadena que indica la cantidad de cursos pendientes de insertar en Moodle.
     """
     query = f'''
-    SELECT 
+    SELECT
         lc.nombrecorto
     FROM
         sva.le_cursos AS lc
     WHERE
-        lc.semestre = '{semestre}' and 
-        lc.id_moodle is null  
+        lc.semestre = '{semestre}' and
+        lc.id_moodle is null
     '''
 
     resultados = sql.lista_query_especifico(query)
@@ -450,8 +456,8 @@ def crear_usuarios(semestre):
     """
     Esta función crea usuarios al mismo tiempo utilizando datos de una consulta SQL
     y una API de Moodle.
-    
-    :param semestre: El parámetro "semestre" es una cadena que representa el semestre 
+
+    :param semestre: El parámetro "semestre" es una cadena que representa el semestre
     académico para el
     cual la función está creando usuarios.
 
@@ -482,10 +488,10 @@ def obtener_idusuario_username(username):
     """
     Esta función verifica si un usuario existe en Moodle por su nombre de usuario y devuelve
     su ID si existe.
-    
+
     :param username: El nombre de usuario del usuario cuya ID necesita obtenerse.
 
-    :return: Una tupla que contiene el nombre de usuario y Falso (si el usuario no existe 
+    :return: Una tupla que contiene el nombre de usuario y Falso (si el usuario no existe
     en Moodle) o la ID del usuario (si el usuario existe en Moodle).
     """
     existe = moodle.async_idby_username(username)
@@ -498,10 +504,10 @@ def obtener_idusuario_username(username):
 
 def insertar_iduser_moodle_bd(alumnos):
     """
-    Esta función inserta las ID de usuario de Moodle en una tabla de la base de datos y 
+    Esta función inserta las ID de usuario de Moodle en una tabla de la base de datos y
     actualiza las ID correspondientes en otra tabla.
-    
-    :param alumnos: Es una lista de tuplas que contienen el nombre del estudiante y su 
+
+    :param alumnos: Es una lista de tuplas que contienen el nombre del estudiante y su
     correspondiente ID de Moodle
 
     :return: un mensaje de cadena que indica que se ha completado el proceso de inserción de las
@@ -528,13 +534,13 @@ def insertar_iduser_moodle_bd(alumnos):
 
 def crear_usuario_restante(lista):
     """
-    Esta función crea usuarios restantes consultando una base de datos y usando un ejecutor de 
+    Esta función crea usuarios restantes consultando una base de datos y usando un ejecutor de
     grupo de subprocesos para crear usuarios simultáneamente en Moodle.
-    
-    :param lista: El parámetro "lista" es una lista de nombres de usuario para los cuales la 
+
+    :param lista: El parámetro "lista" es una lista de nombres de usuario para los cuales la
     función creará cuentas en Moodle
 
-    :return: un mensaje de cadena que indica si el proceso de creación de usuarios restantes 
+    :return: un mensaje de cadena que indica si el proceso de creación de usuarios restantes
     fue exitoso o si hubo un error.
     """
     usuarios = "', '".join(lista)
@@ -552,13 +558,13 @@ def crear_usuario_restante(lista):
                     -- '_',
                     dbo.eliminar_acentos ( ApellidoMaterno ),
                     dbo.eliminar_acentos ( SUBSTRING ( Nombre, 1, 2 ) ),
-                    '@unasam.edu.pe' 
+                    '@unasam.edu.pe'
                 ),
-                ' ', ''	
-            ) 
-        ) AS correo 
+                ' ', ''
+            )
+        ) AS correo
     FROM
-        dbo.Alumno AS a 
+        dbo.Alumno AS a
     WHERE
         Alumno IN ('{usuarios}')
     '''
@@ -584,25 +590,25 @@ def crear_usuario_restante(lista):
 @decorador.calcular_tiempo_arg
 def corregir_alumno_noinsertado(semestre):
     """
-    Esta función corrige a los estudiantes que no se han insertado en la base de datos consultando 
-    sus nombres y luego utilizando subprocesos múltiples para obtener sus ID y nombres de usuario 
+    Esta función corrige a los estudiantes que no se han insertado en la base de datos consultando
+    sus nombres y luego utilizando subprocesos múltiples para obtener sus ID y nombres de usuario
     de Moodle, que luego se insertan en la base de datos.
-    
+
     :param semestre: El semestre para el que la función está tratando de corregir los datos.
 
     :return: una cadena que indica la cantidad de estudiantes que aún deben insertarse en la base
     de datos de Moodle. Si no hay más alumnos para corregir, devuelve una cadena que indica que
-    no hay más datos para corregir. Si hay un error durante el proceso, devuelve una cadena que 
+    no hay más datos para corregir. Si hay un error durante el proceso, devuelve una cadena que
     indica el error.
     """
     query = f'''
     SELECT DISTINCT
-        LOWER(r.Alumno) AS alumno 
+        LOWER(r.Alumno) AS alumno
     FROM
         dbo.Rendimiento AS r
-        INNER JOIN dbo.Alumno AS a ON r.Alumno = a.Alumno 
+        INNER JOIN dbo.Alumno AS a ON r.Alumno = a.Alumno
     WHERE
-        a.moodle_id IS NULL 
+        a.moodle_id IS NULL
         AND r.Semestre = '{semestre}'
     '''
 
@@ -634,18 +640,18 @@ def corregir_alumno_noinsertado(semestre):
 
 # matricular estudiantes
 @decorador.calcular_tiempo_arg
-def matricular_usuarios(semestre, alumno = None):
+def matricular_usuarios(semestre, alumno=None):
     """
     Esta función matricula a los usuarios para un semestre determinado y, opcionalmente, para un
     estudiante específico.
-    
+
     :param semestre: El semestre para el cual se están inscribiendo los usuarios.
-    
-    :param alumno: El parámetro "alumno" es un parámetro opcional que representa al alumno 
+
+    :param alumno: El parámetro "alumno" es un parámetro opcional que representa al alumno
     específico que se inscribirá en el curso.
 
-    :return: un mensaje de cadena que dice "Matrículas realizadas con éxito". si el proceso 
-    de matriculación fue exitoso, "No hay matriculas a realizar". si no hay matrículas a 
+    :return: un mensaje de cadena que dice "Matrículas realizadas con éxito". si el proceso
+    de matriculación fue exitoso, "No hay matriculas a realizar". si no hay matrículas a
     realizar, o un mensaje de error si hubo un error durante el proceso de matrícula.
     """
     if alumno is None:
@@ -684,41 +690,51 @@ def matricular_usuarios(semestre, alumno = None):
 def insertar_matriculas_bd(matriculas, semestre):
     """
     Esta función inserta datos de matriculación en una tabla de base de datos.
-    
-    :param matriculas: Una lista de tuplas que contienen la identificación del curso, la 
-    identificación del estudiante y la identificación del semestre para cada inscripción 
+
+    :param matriculas: Una lista de tuplas que contienen la identificación del curso, la
+    identificación del estudiante y la identificación del semestre para cada inscripción
     que se insertará en la base de datos.
-    
+
     :param semestre: El ID del semestre al que pertenecen las matrículas
-    
+
     :return: un mensaje de cadena que indica que el proceso de inserción de datos se ha completado.
     """
     with sql.obtener_cursor() as cursor:
         for matricula in matriculas:
             data = {'curso_id': matricula[0], 'alumno_id': matricula[1], 'semestre_id': semestre}
 
-            cursor.execute('INSERT INTO sva.le_maticulas_moodle (curso_id, alumno_id, semestre_id) VALUES (%s, %s, %s)',
-                          (data['curso_id'], data['alumno_id'], data['semestre_id']))
+            cursor.execute('''
+            INSERT INTO sva.le_maticulas_moodle
+            (curso_id, alumno_id, semestre_id)
+            VALUES (%s, %s, %s)''', (
+                data['curso_id'],
+                data['alumno_id'],
+                data['semestre_id']
+                ))
 
     return 'Se completo la insersion de datos obtenidos.'
 
 
 def transformar_dataframe(dataframe):
     """
-    La función transforma un marco de datos dado al extraer los valores de 'id' de ciertas columnas 
+    La función transforma un marco de datos dado al extraer los valores de 'id' de ciertas columnas
     y los devuelve como una lista de tuplas.
-    
-    :param dataframe: un marco de datos de pandas que contiene columnas con información sobre 
+
+    :param dataframe: un marco de datos de pandas que contiene columnas con información sobre
     los cursos inscritos y las identificaciones de los estudiantes
 
-    :return: una lista de tuplas, donde cada tupla contiene dos elementos: la identificación de 
+    :return: una lista de tuplas, donde cada tupla contiene dos elementos: la identificación de
     un curso y la identificación de un estudiante que está inscrito en ese curso.
     """
     obtenidos = []
     for col in dataframe.columns:
         for row in dataframe[col]:
             if row is not None and 'id' in row:
-                cursos = [curso['id'] for curso in row['enrolledcourses'] if 'id' in curso] if row['enrolledcourses'] is not None else []
+                cursos = [
+                    curso['id']
+                    for curso in row['enrolledcourses']
+                    if 'id' in curso
+                    ] if row['enrolledcourses'] is not None else []
                 obtenidos.append([(curso, row['id']) for curso in cursos])
 
     obtenido = [ids for lista in obtenidos for ids in lista]
@@ -728,14 +744,14 @@ def transformar_dataframe(dataframe):
 @decorador.calcular_tiempo_arg
 def obtener_matriculas_moodle_pandas(semestre):
     """
-    Esta función obtiene los ID de los cursos de Moodle para un semestre determinado, los usa 
-    para realizar solicitudes asincrónicas a la API de Moodle, transforma los datos resultantes 
+    Esta función obtiene los ID de los cursos de Moodle para un semestre determinado, los usa
+    para realizar solicitudes asincrónicas a la API de Moodle, transforma los datos resultantes
     en un marco de datos de Pandas e inserta los datos en una base de datos.
-    
-    :param semestre: El parámetro "semestre" es una cadena que representa el semestre académico 
+
+    :param semestre: El parámetro "semestre" es una cadena que representa el semestre académico
     para el cual queremos obtener las inscripciones de Moodle.
 
-    :return: un mensaje de cadena que indica el número de matriculas (inscripciones) que se 
+    :return: un mensaje de cadena que indica el número de matriculas (inscripciones) que se
     han procesado o un mensaje de error si hubo un problema con el procesamiento.
     """
     semestre_val = sql.informacion_semestre(semestre)
@@ -771,16 +787,16 @@ def obtener_matriculas_moodle_pandas(semestre):
 
 
 @decorador.calcular_tiempo_arg
-def ocultar_cursos_moodle(semestre, lista = False):
+def ocultar_cursos_moodle(semestre, lista=False):
     """
     Esta función oculta los cursos de Moodle para un semestre determinado.
-    
+
     :param semestre: Una cadena que representa el semestre para el cual los cursos deben ocultarse.
 
-    :param lista: Un parámetro booleano que indica si el parámetro semestre es una lista de ID de 
+    :param lista: Un parámetro booleano que indica si el parámetro semestre es una lista de ID de
     curso o una cadena que representa un semestre.
 
-    :return: ya sea una cadena que indica que los cursos se ocultaron con éxito o que no hay 
+    :return: ya sea una cadena que indica que los cursos se ocultaron con éxito o que no hay
     más cursos para ocultar.
     """
     if lista and not isinstance(semestre, list):
@@ -813,11 +829,11 @@ def ocultar_cursos_moodle(semestre, lista = False):
 def obtener_visibilidad_curso(semestre):
     """
     Esta función obtiene la visibilidad de los cursos de un semestre dado y oculta a los mismos.
-    
+
     :param semestre: El semestre para el que se necesita obtener la visibilidad de los cursos.
-    
-    :return: una cadena que indica la cantidad de cursos que aún son visibles después de un 
-    proceso de obtención de visibilidad para los cursos. Si no hay más cursos para procesar, 
+
+    :return: una cadena que indica la cantidad de cursos que aún son visibles después de un
+    proceso de obtención de visibilidad para los cursos. Si no hay más cursos para procesar,
     devuelve un mensaje indicándolo. Si hay un error en el proceso, devuelve un mensaje de error.
     """
     query = f"SELECT lc.id_moodle from sva.le_cursos lc WHERE lc.semestre = '{semestre}'"
@@ -831,7 +847,11 @@ def obtener_visibilidad_curso(semestre):
             with ThreadPoolExecutor() as executor:
                 respuestas = list(executor.map(moodle.creacion_concurrente, list_params))
 
-            visibles = [resp['courses'][0]['id'] for resp in respuestas if resp['courses'] != [] if resp['courses'][0]['visible'] == 1]
+            visibles = [
+                resp['courses'][0]['id']
+                for resp in respuestas if resp['courses'] != []
+                if resp['courses'][0]['visible'] == 1
+                ]
 
             ocultar_cursos_moodle(visibles, True)
 
@@ -848,12 +868,12 @@ def obtener_visibilidad_curso(semestre):
 def desmatricular_usuario_username(semestre, username):
     """
     Esta función da de baja a un usuario de sus cursos en Moodle utilizando su nombre de usuario.
-    
+
     :param username: El nombre de usuario del estudiante que necesita ser dado de baja de sus cursos
-    
+
     :return: ya sea una cadena "Creo que no existe ese alumno" si el alumno no existe en la base de
     datos, o una lista de respuestas de un proceso simultáneo de cancelación de la inscripción del
-    alumno en sus cursos en Moodle. Si hay un error con las solicitudes realizadas durante el 
+    alumno en sus cursos en Moodle. Si hay un error con las solicitudes realizadas durante el
     proceso concurrente, la función devolverá el mensaje de error.
     """
     query = f'''SELECT moodle_id FROM dbo.Alumno WHERE '{semestre}' AND Alumno='{username}' '''
@@ -885,7 +905,7 @@ def desmatricular_usuarios():
     Esta función recupera una lista de usuarios inscritos, intenta cancelar su inscripción al mismo
     tiempo mediante una API de Moodle y devuelve los errores encontrados durante el proceso.
 
-    :return: ya sea las respuestas de las llamadas desmatricular_usuario concurrentes o un error 
+    :return: ya sea las respuestas de las llamadas desmatricular_usuario concurrentes o un error
     si hay una excepción de solicitudes.
     """
     query = '''EXEC le_matriculados '2020-1', '161.0704.574' '''
@@ -902,4 +922,3 @@ def desmatricular_usuarios():
 
     except requests.exceptions.RequestException as error:
         return error
-    
