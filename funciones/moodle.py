@@ -448,3 +448,14 @@ def concurr_obtener_tareas(resultados):
     } for resultado in resultados]
 
     return list_params
+
+
+def concurr_obtener_archivos(resultados):
+    list_params = [{
+        "wstoken": api_key,
+        "moodlewsrestformat": "json",
+        "wsfunction": "mod_resource_get_resources_by_courses",
+        "courseids[0]": int(resultado)
+    } for resultado in resultados]
+
+    return list_params

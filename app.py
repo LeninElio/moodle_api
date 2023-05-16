@@ -1,7 +1,7 @@
 # Importando la función `migracion` desde el módulo `funciones` y renombrándola como `mg`.
 
 from concurrent.futures import ThreadPoolExecutor
-from funciones import migracion as mg
+from funciones import migracion as mg # noqa
 from funciones import moodle
 
 SEMESTRE_ANTERIOR = '2019-1'
@@ -84,12 +84,23 @@ def listar_tareas():
         responses = list(executor.map(moodle.creacion_concurrente, peticion))
 
     return [
-        (tareas['id'], tarea['id'])
-        for dato in responses if dato['courses'] != []
-        for tareas in dato['courses']
-        for tarea in tareas['assignments']
+        {curso['id']: [tarea['id'] for tarea in curso['assignments']]}
+        for respuesta in responses if respuesta['courses'] != []
+        for curso in respuesta['courses']
         ]
 
 
-tareas = listar_tareas()
-print(tareas)
+def listar_archivos():
+    """
+    Obtener la lista de archivos
+    """
+    cursos = [9899, 9890]
+    peticion = moodle.concurr_obtener_archivos(cursos)
+    with ThreadPoolExecutor() as executor:
+        responses = list(executor.map(moodle.creacion_concurrente, peticion))
+
+    return responses
+
+
+archivos = listar_archivos()
+print(archivos)
