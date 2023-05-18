@@ -459,3 +459,44 @@ def concurr_obtener_archivos(resultados):
     } for resultado in resultados]
 
     return list_params
+
+
+def concurr_obtener_todos_recursos(resultados):
+    list_params = [{
+        "wstoken": api_key,
+        "moodlewsrestformat": "json",
+        "wsfunction": "core_course_get_contents",
+        "courseid": int(resultado)
+    } for resultado in resultados]
+
+    return list_params
+
+
+def obtener_todos_recursos_semana(curso_id):
+    """
+    """
+    list_params = {
+        "wstoken": api_key,
+        "moodlewsrestformat": "json",
+        "wsfunction": "core_course_get_contents",
+        "courseid": int(curso_id)
+    }
+
+    response = session.post(f"{url}", params=list_params).json()
+
+    resultado: dict = {}
+
+    for curso in response:
+        recursos = {'assign': 0, 'chat': 0, 'data': 0, 'forum': 0, 'h5pactivity': 0, 'label': 0, 'lesson': 0, 'page': 0, 'quiz': 0, 'resource': 0, 'survey': 0, 'url': 0, 'workshop': 0, 'otros': 0} # noqa
+        for modulos in curso['modules']:
+            if modulos['modname'] in recursos.keys():
+                recursos[modulos['modname']] += 1
+            else:
+                recursos['otros'] += 1
+
+        title = f"{curso['id']}, {curso['name']}"
+        recursos = {clave: valor for clave, valor in recursos.items() if valor != 0}
+        resultado[title] = recursos
+
+    retonro = {curso_id: resultado}
+    return retonro
