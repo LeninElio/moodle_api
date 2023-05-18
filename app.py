@@ -1,6 +1,6 @@
 # Importando la función `migracion` desde el módulo `funciones` y renombrándola como `mg`.
 
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, wait
 import json
 from funciones import migracion as mg # noqa
 from funciones import moodle
@@ -75,53 +75,70 @@ if __name__ == "__main__":
     # print(matriculas_restante)
 
 
-def listar_tareas():
-    """
-    Obtener la lista de tareas
-    """
-    cursos = [9899, 9890]
-    peticion = moodle.concurr_obtener_tareas(cursos)
-    with ThreadPoolExecutor() as executor:
-        responses = list(executor.map(moodle.creacion_concurrente, peticion))
+# Solo obtiene las tareas de un curso, no optimo
+# def listar_tareas():
+#     """
+#     Obtener la lista de tareas
+#     """
+#     cursos = [9899, 9890]
+#     peticion = moodle.concurr_obtener_tareas(cursos)
+#     with ThreadPoolExecutor() as executor:
+#         responses = list(executor.map(moodle.creacion_concurrente, peticion))
 
-    return [
-        {curso['id']: [tarea['id'] for tarea in curso['assignments']]}
-        for respuesta in responses if respuesta['courses'] != []
-        for curso in respuesta['courses']
-        ]
-
-
-def listar_archivos():
-    """
-    Obtener la lista de archivos
-    """
-    cursos = [9899, 9890]
-    peticion = moodle.concurr_obtener_archivos(cursos)
-    with ThreadPoolExecutor() as executor:
-        responses = list(executor.map(moodle.creacion_concurrente, peticion))
-
-    return responses
+#     return [
+#         {curso['id']: [tarea['id'] for tarea in curso['assignments']]}
+#         for respuesta in responses if respuesta['courses'] != []
+#         for curso in respuesta['courses']
+#         ]
 
 
-def listar_contenido_curso():
+# solo enlista los recursos y no el contenido completo del curso
+# def listar_archivos():
+#     """
+#     Obtener la lista de archivos
+#     """
+#     cursos = [9899, 9890]
+#     peticion = moodle.concurr_obtener_archivos(cursos)
+#     with ThreadPoolExecutor() as executor:
+#         responses = list(executor.map(moodle.creacion_concurrente, peticion))
+
+#     return responses
+
+
+# Fallo en la obtencion del ID course
+# def listar_contenido_curso():
+#     """
+#     Obtener la lista de todo el contenido del curso de forma concurrente
+#     """
+#     cursos = [9899, 9890]
+#     peticion = moodle.concurr_obtener_todos_recursos(cursos)
+#     with ThreadPoolExecutor() as executor:
+#         responses = list(executor.map(moodle.creacion_concurrente, peticion))
+
+#     return responses
+
+
+def listar_contenido_cursos_semana(cursos):
     """
     Obtener la lista de todo el contenido del curso de forma concurrente
+    mejorado la peticion para identificar cursos y todos los recursos
     """
-    cursos = [9899, 9890]
-    peticion = moodle.concurr_obtener_todos_recursos(cursos)
     with ThreadPoolExecutor() as executor:
-        responses = list(executor.map(moodle.creacion_concurrente, peticion))
+        futures = [executor.submit(moodle.obtener_todos_recursos_semana, curso) for curso in cursos]
+        resultados = wait(futures)
 
-    return responses
+    resultado_final = {}
+    for future in resultados.done:
+        try:
+            resultado = future.result()
+            resultado_final.update(resultado)
+
+        except Exception as e:
+            print(f"Ocurrió un error al obtener los recursos del curso: {e}")
+
+    return resultado_final
 
 
-def listar_contenido_curso_semana(curso):
-    """
-    Obtener la lista de todo el contenido del curso de forma concurrente
-    """
-    peticion = moodle.obtener_todos_recursos_semana(curso)
-    return peticion
-
-
-contenidos = listar_contenido_curso_semana(9899)
+cursos = [9890, 9899, 9434]
+contenidos = listar_contenido_cursos_semana(cursos)
 print(json.dumps(contenidos))
