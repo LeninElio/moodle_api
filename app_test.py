@@ -322,3 +322,44 @@ def insertar_matriculas_bd(indicador):
 
 # RESPUESTA = insertar_matriculas_bd('indicador_viii')
 # print(RESPUESTA)
+# Solo obtiene las tareas de un curso, no optimo
+# def listar_tareas():
+#     """
+#     Obtener la lista de tareas
+#     """
+#     cursos = [9899, 9890]
+#     peticion = moodle.concurr_obtener_tareas(cursos)
+#     with ThreadPoolExecutor() as executor:
+#         responses = list(executor.map(moodle.creacion_concurrente, peticion))
+
+#     return [
+#         {curso['id']: [tarea['id'] for tarea in curso['assignments']]}
+#         for respuesta in responses if respuesta['courses'] != []
+#         for curso in respuesta['courses']
+#         ]
+
+
+# solo enlista los recursos y no el contenido completo del curso
+# def listar_archivos():
+#     """
+#     Obtener la lista de archivos
+#     """
+#     cursos = [9899, 9890]
+#     peticion = moodle.concurr_obtener_archivos(cursos)
+#     with ThreadPoolExecutor() as executor:
+#         responses = list(executor.map(moodle.creacion_concurrente, peticion))
+
+#     return responses
+
+
+# Fallo en la obtencion del ID course
+# def listar_contenido_curso():
+#     """
+#     Obtener la lista de todo el contenido del curso de forma concurrente
+#     """
+#     cursos = [9899, 9890]
+#     peticion = moodle.concurr_obtener_todos_recursos(cursos)
+#     with ThreadPoolExecutor() as executor:
+#         responses = list(executor.map(moodle.creacion_concurrente, peticion))
+
+#     return responses

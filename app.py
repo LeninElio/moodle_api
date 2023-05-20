@@ -4,22 +4,19 @@ from concurrent.futures import ThreadPoolExecutor, wait
 import json
 from funciones import migracion as mg # noqa
 from funciones import moodle
+from funciones import decorador
 
-SEMESTRE_ANTERIOR = '2019-1'
-SEMESTRE = '2020-2'
 
-"""
-Ejecutar la app principal
-Este código es el programa principal que ejecuta una serie de funciones desde un módulo
-llamado "funciones". Estas funciones están relacionadas con la migración de cursos y usuarios
-en una plataforma Moodle para un semestre específico. El código incluye varias llamadas a
-funciones comentadas que se pueden descomentar y ejecutar según las necesidades específicas
-del proceso de migración. La llamada de función final imprime las inscripciones de Moodle
-restantes para el semestre.
-"""
-
-if __name__ == "__main__":
-    pass
+def main(semestre, semetre_anterior):
+    """
+    Ejecutar la app principal
+    Este código es el programa principal que ejecuta una serie de funciones desde un módulo
+    llamado "funciones". Estas funciones están relacionadas con la migración de cursos y usuarios
+    en una plataforma Moodle para un semestre específico. El código incluye varias llamadas a
+    funciones comentadas que se pueden descomentar y ejecutar según las necesidades específicas
+    del proceso de migración. La llamada de función final imprime las inscripciones de Moodle
+    restantes para el semestre.
+    """
     # A. Finalizar semestre anterior (ocultar los cursos de la visibilidad de estudiantes)
     # ocultar = mg.ocultar_cursos_moodle(SEMESTRE_ANTERIOR)
     # print(ocultar)
@@ -75,49 +72,8 @@ if __name__ == "__main__":
     # print(matriculas_restante)
 
 
-# Solo obtiene las tareas de un curso, no optimo
-# def listar_tareas():
-#     """
-#     Obtener la lista de tareas
-#     """
-#     cursos = [9899, 9890]
-#     peticion = moodle.concurr_obtener_tareas(cursos)
-#     with ThreadPoolExecutor() as executor:
-#         responses = list(executor.map(moodle.creacion_concurrente, peticion))
-
-#     return [
-#         {curso['id']: [tarea['id'] for tarea in curso['assignments']]}
-#         for respuesta in responses if respuesta['courses'] != []
-#         for curso in respuesta['courses']
-#         ]
-
-
-# solo enlista los recursos y no el contenido completo del curso
-# def listar_archivos():
-#     """
-#     Obtener la lista de archivos
-#     """
-#     cursos = [9899, 9890]
-#     peticion = moodle.concurr_obtener_archivos(cursos)
-#     with ThreadPoolExecutor() as executor:
-#         responses = list(executor.map(moodle.creacion_concurrente, peticion))
-
-#     return responses
-
-
-# Fallo en la obtencion del ID course
-# def listar_contenido_curso():
-#     """
-#     Obtener la lista de todo el contenido del curso de forma concurrente
-#     """
-#     cursos = [9899, 9890]
-#     peticion = moodle.concurr_obtener_todos_recursos(cursos)
-#     with ThreadPoolExecutor() as executor:
-#         responses = list(executor.map(moodle.creacion_concurrente, peticion))
-
-#     return responses
-
-
+@decorador.calcular_tiempo_argument
+@decorador.calcular_tiempo_arg
 def listar_contenido_cursos_semana(cursos):
     """
     Obtener la lista de todo el contenido del curso de forma concurrente
@@ -142,3 +98,9 @@ def listar_contenido_cursos_semana(cursos):
 cursos = [9890, 9899, 9434]
 contenidos = listar_contenido_cursos_semana(cursos)
 print(json.dumps(contenidos))
+
+
+if __name__ == "__main__":
+    semestre = '2020-2'
+    semestre_anterior = '2019-1'
+    main(semestre, semestre_anterior)

@@ -42,3 +42,20 @@ def calcular_tiempo_arg(funcion_decorada):
         return retorno
 
     return tiempo_ejecucion
+
+
+def calcular_tiempo_argument(funcion_decorada):
+    """
+    time.perf_counter() está diseñado para medir intervalos de tiempo cortos con la mayor
+    precisión posible, mientras que time.time() devuelve el tiempo absoluto desde un
+    punto fijo en el pasado.
+    """
+    def tiempo_ejecucion(*args):
+        inicio = time.perf_counter()
+        retorno = funcion_decorada(*args)
+        fin = time.perf_counter()
+
+        print(f"Ejecutado en: {round((fin - inicio), 2)} segundos.")
+        return retorno
+
+    return tiempo_ejecucion
