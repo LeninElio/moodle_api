@@ -7,7 +7,7 @@ from conexion import db
 @contextmanager
 def obtener_cursor():
     """
-    Esta función devuelve un objeto de cursor para una conexión de base de datos 
+    Esta función devuelve un objeto de cursor para una conexión de base de datos
     y maneja confirmaciones y reversiones de transacciones.
     :return: un mensaje de cadena que indica el estado de la transacción y la conexión.
     """
@@ -33,7 +33,7 @@ def insertar_datos(table, data):
     """
     Esta función inserta datos en una tabla específica en una base de datos
     mediante una consulta SQL.
-    
+
     :param table: El nombre de la tabla donde se insertarán los datos
     :param data: Un diccionario que contiene los datos que se insertarán en la tabla. Las claves del
     diccionario representan los nombres de las columnas y los valores representan los valores que se

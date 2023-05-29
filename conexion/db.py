@@ -18,7 +18,5 @@ def connection():
         database=database
         # trusted=True
     )
-    
+
     return conn
-
-

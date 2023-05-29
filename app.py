@@ -67,7 +67,7 @@ def main(semestre, semetre_anterior):
     # matricular = mg.matricular_usuarios(SEMESTRE)
     # print(matricular)
 
-    # 8.1. Probablemente algunas matriculas fallen, en este caso se hace una busqueda esos
+    # 8.1. Probablemente algunas matriculas fallen, en este caso se hace una busqueda de esos
     # matriculas_restante = mg.obtener_matriculas_moodle_pandas(SEMESTRE)
     # print(matriculas_restante)
 
