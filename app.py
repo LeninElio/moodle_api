@@ -1,13 +1,12 @@
-# Importando la función `migracion` desde el módulo `funciones` y renombrándola como `mg`.
+"""Importando la función `migracion` desde el módulo `funciones` y renombrándola como `mg`."""
 
 from concurrent.futures import ThreadPoolExecutor, wait
 import json
 from collections import defaultdict
-from datetime import datetime
-import pandas as pd
 from funciones import migracion as mg
 from funciones import moodle
 from funciones import decorador
+from funciones import reporte
 
 
 def main(semestre, semetre_anterior):
@@ -123,11 +122,7 @@ def listar_notas_curso(curso):
             respuesta['alumno'].append(alumno)
         respuesta[examen].append(nota)
 
-    actual = datetime.now()
-    actual = f'{actual:%Y-%m-%d %H%M}'
-    data_frame = pd.DataFrame(respuesta)
-    data_frame.to_excel(f'./data/nota_s_{actual}.xlsx', index=False)
-    print('Descarga completa.')
+    reporte.descargar_xlsx(respuesta)
 
 
 CURSO_ID = 8611
