@@ -1,8 +1,8 @@
 """ Este módulo contiene funciones que interactuan con la API de moodle """
 
 import os
-import requests
 from collections import defaultdict
+import requests
 from dotenv import load_dotenv
 
 load_dotenv('private/.env')
@@ -289,26 +289,6 @@ def async_idby_shortname(shortname):
     return response
 
 
-def async_alumnosby_course(course_id):
-    """
-    La función `async_alumnosby_course` recupera una lista de usuarios inscritos para un ID de curso
-    dado.
-
-    :param course_id: El ID del curso para el que desea recuperar la lista de usuarios inscritos.
-
-    :return: La función `async_alumnosby_course` devuelve una respuesta JSON que contiene
-    información sobre los usuarios inscritos en un curso determinado.
-    """
-    list_params = {
-        "wsfunction": "core_enrol_get_enrolled_users",
-        "courseid": course_id
-    }
-
-    params = {**global_params, **list_params}
-    response = session.get(f"{url}", params=params).json()
-    return response
-
-
 def async_peticion_por_idcurso(respuestas):
     """
     La función toma una lista de ID de cursos y devuelve una lista de parámetros para realizar
@@ -439,7 +419,7 @@ def listar_cursos_por_idcurso(respuestas):
     return list_params
 
 
-def concurr_obtener_tareas(resultados):
+def concurr_obtener_tareas(resultados): # pylint: disable=missing-docstring
     list_params = [{
         "wstoken": api_key,
         "moodlewsrestformat": "json",
@@ -451,7 +431,7 @@ def concurr_obtener_tareas(resultados):
     return list_params
 
 
-def concurr_obtener_archivos(resultados):
+def concurr_obtener_archivos(resultados): # pylint: disable=missing-docstring
     list_params = [{
         "wstoken": api_key,
         "moodlewsrestformat": "json",
@@ -462,7 +442,7 @@ def concurr_obtener_archivos(resultados):
     return list_params
 
 
-def concurr_obtener_todos_recursos(resultados):
+def concurr_obtener_todos_recursos(resultados): # pylint: disable=missing-docstring
     list_params = [{
         "wstoken": api_key,
         "moodlewsrestformat": "json",
@@ -473,7 +453,7 @@ def concurr_obtener_todos_recursos(resultados):
     return list_params
 
 
-def obtener_todos_recursos_semana(curso_id):
+def obtener_todos_recursos_semana(curso_id): # pylint: disable=missing-docstring
     list_params = {
         "wstoken": api_key,
         "moodlewsrestformat": "json",
@@ -492,3 +472,15 @@ def obtener_todos_recursos_semana(curso_id):
     retorno = {curso_id: resultado}
 
     return retorno
+
+
+def obtener_notas_curso(curso_id): # pylint: disable=missing-docstring
+    list_params = {
+        "wstoken": api_key,
+        "moodlewsrestformat": "json",
+        "wsfunction": "gradereport_user_get_grade_items",
+        "courseid": int(curso_id)
+    }
+
+    response = session.post(f"{url}", params=list_params).json()
+    return dict(response)

@@ -2,7 +2,10 @@
 
 from concurrent.futures import ThreadPoolExecutor, wait
 import json
-from funciones import migracion as mg # noqa
+from collections import defaultdict
+from datetime import datetime
+import pandas as pd
+from funciones import migracion as mg
 from funciones import moodle
 from funciones import decorador
 
@@ -22,11 +25,11 @@ def main(semestre, semetre_anterior):
     # print(ocultar)
 
     # B. Verificar si aun hay cursos del semestre anterior
-    # visibles = mg.obtener_visibilidad_curso(SEMESTRE_ANTERIOR)
+    # visibles = mg.obtener_visibilidad_curso(semetre_anterior)
     # print(visibles)
 
     # 1. Creacion del semestre
-    # semestre_creado = mg.crear_semestre(SEMESTRE)
+    # semestre_creado = mg.crear_semestre(semestre)
     # print(semestre_creado)
 
     # 2. Creacion del categoria facultades
@@ -71,8 +74,9 @@ def main(semestre, semetre_anterior):
     # matriculas_restante = mg.obtener_matriculas_moodle_pandas(SEMESTRE)
     # print(matriculas_restante)
 
+    return mg.crear_cursos('ret'), semestre, semetre_anterior
 
-@decorador.calcular_tiempo_argument
+
 @decorador.calcular_tiempo_arg
 def listar_contenido_cursos_semana(cursos):
     """
@@ -89,18 +93,48 @@ def listar_contenido_cursos_semana(cursos):
             resultado = future.result()
             resultado_final.update(resultado)
 
-        except Exception as e:
-            print(f"Ocurrió un error al obtener los recursos del curso: {e}")
+        except Exception as e_e: # pylint: disable=broad-except
+            print(f"Ocurrió un error al obtener los recursos del curso: {e_e}")
 
     return resultado_final
 
 
-cursos = [9890, 9899, 9434]
-contenidos = listar_contenido_cursos_semana(cursos)
+cursos_id = [8611]
+contenidos = listar_contenido_cursos_semana(cursos_id)
 print(json.dumps(contenidos))
 
 
-if __name__ == "__main__":
-    semestre = '2020-2'
-    semestre_anterior = '2019-1'
-    main(semestre, semestre_anterior)
+@decorador.calcular_tiempo_arg
+def listar_notas_curso(curso):
+    """
+    Obtener todas las notas del curso en un archivo excel
+    """
+    contenido = moodle.obtener_notas_curso(curso)
+
+    data = []
+    for conten in contenido['usergrades']:
+        for grade in conten['gradeitems']:
+            if grade['grademax'] == 20:
+                data.append((conten['userfullname'], grade['itemname'], grade['gradeformatted']))
+
+    respuesta = defaultdict(list)
+    for alumno, examen, nota in data:
+        if alumno not in respuesta['alumno']:
+            respuesta['alumno'].append(alumno)
+        respuesta[examen].append(nota)
+
+    actual = datetime.now()
+    actual = f'{actual:%Y-%m-%d %H%M}'
+    data_frame = pd.DataFrame(respuesta)
+    data_frame.to_excel(f'./data/nota_s_{actual}.xlsx', index=False)
+    print('Descarga completa.')
+
+
+CURSO_ID = 8611
+listar_notas_curso(CURSO_ID)
+
+
+# if __name__ == "__main__":
+#     SEMESTRE = '2020-2'
+#     SEMESTRE_ANTERIOR = '2019-1'
+#     main(SEMESTRE, SEMESTRE_ANTERIOR)
