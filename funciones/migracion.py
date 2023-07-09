@@ -30,16 +30,16 @@ def crear_semestre(semestre):
         if 'exception' in nuevo_semestre:
             return f"Error en la creacion del semestre, {nuevo_semestre['message']}"
 
-        else:
-            data = {
-                'nombre': semestre,
-                'nombre_completo': name,
-                'descripcion': desc,
-                'parent': nuevo_semestre[0]['id']
-            }
+        # else:
+        data = {
+            'nombre': semestre,
+            'nombre_completo': name,
+            'descripcion': desc,
+            'parent': nuevo_semestre[0]['id']
+        }
 
-            sql.insertar_datos('sva.le_semestre', data)
-            return 'Semestre creado exitosamente'
+        sql.insertar_datos('sva.le_semestre', data)
+        return 'Semestre creado exitosamente'
 
     except requests.exceptions.RequestException as error:
         return f'Fallo en la creacion del semestre, Error: {error}'
@@ -83,15 +83,14 @@ def crear_facultades(semestre):
             if 'exception' in facultades:
                 return f"Error en la creacion de facultades, {facultades['message']}"
 
-            else:
-                data = {
-                    'semestre': semestre_val[0],
-                    'numeracion': num,
-                    'parent': facultades[0]['id'],
-                    "idfac": idfac
-                }
+            data = {
+                'semestre': semestre_val[0],
+                'numeracion': num,
+                'parent': facultades[0]['id'],
+                "idfac": idfac
+            }
 
-                sql.insertar_datos('sva.le_facultad', data)
+            sql.insertar_datos('sva.le_facultad', data)
 
         return 'Facultades creados satisfactoriamente'
 
@@ -138,15 +137,14 @@ def crear_escuelas(semestre):
             if 'exception' in escuelas:
                 return f"Error en la creacion de escuelas, {escuelas['message']}"
 
-            else:
-                data = {
-                    'semestre': semestre_val[0],
-                    'numeracion': num,
-                    'parent': escuelas[0]['id'],
-                    "idesc": idesc
-                }
+            data = {
+                'semestre': semestre_val[0],
+                'numeracion': num,
+                'parent': escuelas[0]['id'],
+                "idesc": idesc
+            }
 
-                sql.insertar_datos('sva.le_escuela', data)
+            sql.insertar_datos('sva.le_escuela', data)
 
         return 'Escuelas creadas satisfactoriamente.'
 
@@ -154,6 +152,7 @@ def crear_escuelas(semestre):
         return f'Error en la creacion de escuelas, error: {error}'
 
 
+@decorador.calcular_tiempo_arg
 def crear_ciclos(semestre):
     """
     Esta función crea ciclos en Moodle basados en información de una base de datos SQL.
@@ -198,14 +197,13 @@ def crear_ciclos(semestre):
             if 'exception' in ciclos:
                 return f"Error en la creacion de ciclos, {ciclos['message']}"
 
-            else:
-                data = {
-                    'numeracion': resul[3],
-                    'parent': ciclos[0]['id'],
-                    "idescparent": resul[2],
-                    "idciclo": resul[1]
-                }
-                sql.insertar_datos('sva.le_ciclo', data)
+            data = {
+                'numeracion': resul[3],
+                'parent': ciclos[0]['id'],
+                "idescparent": resul[2],
+                "idciclo": resul[1]
+            }
+            sql.insertar_datos('sva.le_ciclo', data)
 
         return 'Ciclos creados satisfactoriamente.'
 
@@ -238,33 +236,33 @@ def migracion_cursos_bd(semestre=None, inicioclases=None):
 
         sql.ejecutar(f"""
             INSERT INTO sva.le_cursos
-            (nombrecompleto, nombrecorto, categoriaid, fechainicio, semestre, idcurso)
+            (nombrecompleto, nombrecorto, categoriaid, fechainicio, semestre, idcurso, docente_id)
             SELECT
-                concat (
-                    cp.Semestre, ', ', c.Nombre, ', ', c.Curricula,
-                    ', ',  e.Abreviatura, ', ', cp.Seccion ) AS nombrecompleto,
-                concat (
-                    c.Nombre, ', ', e.Abreviatura, ', ', c.Curricula,
-                    ', ', cp.Semestre, ', ', cp.Seccion ) AS nombrecorto,
+                concat ( cp.Semestre, ', ', c.Nombre, ', ', c.Curricula, ', ',
+                     e.Abreviatura, ', ', cp.Seccion ) AS nombrecompleto,
+                concat ( c.Nombre, ', ', e.Abreviatura, ', ', c.Curricula, ', ',
+                     cp.Semestre, ', ', cp.Seccion ) AS nombrecorto,
                 lc.parent AS categoriaid,
                 DATEDIFF( SECOND, '1970-01-01 00:00:00.0', '{fecha_verificada}' ) AS fechainicio,
                 cp.Semestre,
                 concat ( cp.Semestre, '-', CAST ( c.id AS VARCHAR ), '-',
-                CAST ( cp.CursoProgramado AS VARCHAR )) AS idcurso
+                CAST ( cp.CursoProgramado AS VARCHAR ) ) AS idcurso,
+                t.moodle_id as docente_id
             FROM
                 dbo.CursoProgramado AS cp
-                INNER JOIN dbo.Curso AS c ON cp.Curricula = c.Curricula
-                AND cp.Curso = c.Curso
+                INNER JOIN dbo.Curso AS c ON cp.Curricula = c.Curricula 
+                AND cp.Curso = c.Curso 
                 AND cp.Escuela = c.Escuela
-                INNER JOIN sva.le_escuela AS le ON c.Escuela = le.idesc
+                INNER JOIN sva.le_escuela AS le ON c.Escuela = le.idesc 
                 AND le.semestre = {semestre_val[0]}
-                INNER JOIN sva.le_ciclo AS lc ON le.parent = lc.idescparent
+                INNER JOIN sva.le_ciclo AS lc ON le.parent = lc.idescparent 
                 AND c.Ciclo = lc.idciclo
                 INNER JOIN dbo.Escuela AS e ON c.Escuela = e.Escuela
-                INNER JOIN sva.le_semestre AS ls ON le.semestre = ls.id
+                INNER JOIN sva.le_semestre AS ls ON le.semestre = ls.id 
                 AND cp.Semestre = ls.nombre
+                INNER JOIN dbo.Trabajador AS t ON cp.Trabajador = t.Trabajador 
             WHERE
-                cp.Semestre = '{semestre}' AND cp.tipo != 'H'
+                cp.Semestre = '{semestre}' AND cp.tipo != 'H' 
         """)
 
         return 'Migracion de cursos completo.'
@@ -439,8 +437,7 @@ def corregir_cursos_noinsertados(semestre):
 
             return f'Cursos pendientes por insertar: {len(noexiste)}'
 
-        else:
-            return 'No hay mas cursos por corregir.'
+        return 'No hay mas cursos por corregir.'
 
     except requests.exceptions.RequestException as error:
         return f'Error en la correccion de cursos, Error: {error}'
@@ -530,6 +527,65 @@ def insertar_iduser_moodle_bd(alumnos):
     sql.ejecutar("DROP TABLE IF EXISTS sva.le_alumnos")
 
     return 'Subproceso: IDs de alumnos insertados.'
+
+
+def insertar_iddocente_moodle_bd(docentes):
+    """
+    Insertar docente en la DB
+    """
+    sql.ejecutar("CREATE TABLE sva.le_docentes (nombreusuario VARCHAR(20), moodle_id INT)")
+
+    for docente in docentes:
+        data = {'nombreusuario': docente[0], 'moodle_id': docente[1]}
+        sql.insertar_datos('sva.le_docentes', data)
+
+    sql.ejecutar("""
+        UPDATE t
+        SET t.moodle_id = ld.moodle_id
+        FROM dbo.Trabajador as t
+        INNER JOIN sva.le_docentes as ld
+        ON t.Dni = ld.nombreusuario
+    """)
+
+    sql.ejecutar("DROP TABLE IF EXISTS sva.le_docentes")
+
+    return 'Subproceso: IDs de docentes insertados.'
+
+
+def crear_docente_restante(lista):
+    """
+    Crear docente restante
+    """
+    docentes = "', '".join(lista)
+
+    query = f'''
+    SELECT LOWER
+        (t.Dni) AS username,
+        TRIM(t.Password) AS password,
+        t.Nombre AS nombre,
+        CONCAT ( t.ApellidoPaterno, ' ', t.ApellidoMaterno ) AS apellido,
+        t.Email AS correo
+    FROM
+        dbo.Trabajador AS t
+    WHERE
+        t.Dni IN ('{docentes}')
+    '''
+
+    resultados = sql.lista_query(query)
+
+    try:
+        list_params = moodle.lista_concurr_usuarios(resultados)
+
+        with ThreadPoolExecutor() as executor:
+            problemas = list(executor.map(moodle.creacion_concurrente, list_params))
+
+        if 'exception' in problemas:
+            print(problemas)
+
+        return 'Subproceso: Docentes restantes creados.'
+
+    except requests.exceptions.RequestException as error:
+        return f'Subproceso: Error en la creacion de docentes restantes, {error}'
 
 
 def crear_usuario_restante(lista):
@@ -627,12 +683,49 @@ def corregir_alumno_noinsertado(semestre):
 
             return f'Alumnos pendientes por insertar: {len(noexiste)}'
 
-        else:
-            return 'No hay mas datos a corregir.'
+        return 'No hay mas datos a corregir.'
 
     except requests.exceptions.RequestException as error:
         return f'Error en la correccion de alumnos, error: {error}'
 
+
+@decorador.calcular_tiempo_arg
+def creacion_docente_moodle(semestre):
+    """
+    Manejo de docentes
+    """
+    query = f'''
+    SELECT DISTINCT 
+        TRIM(t.Dni) AS dni 
+    FROM
+        dbo.CursoProgramado AS c
+        INNER JOIN dbo.Trabajador AS t ON c.Trabajador = t.Trabajador 
+    WHERE
+        c.Semestre = '{semestre}' 
+        AND t.Dni <> '' 
+        AND t.moodle_id IS NULL 
+        AND t.NombreCompleto NOT LIKE '%CONTRATO%' 
+    '''
+
+    resultados = sql.lista_query_especifico(query)
+
+    try:
+        if resultados != []:
+            with ThreadPoolExecutor() as executor:
+                results = list(executor.map(obtener_idusuario_username, resultados))
+
+            existe = [(username, exists) for username, exists in results if exists > 0]
+            noexiste = [username for username, exists in results if not exists]
+
+            insertar_iddocente_moodle_bd(existe)
+            crear_docente_restante(noexiste)
+
+            return f'Docentes pendientes por insertar: {len(noexiste)}'
+
+        return 'No hay mas datos a corregir.'
+
+    except requests.exceptions.RequestException as error:
+        return f'Error en la correccion de alumnos, error: {error}'
 
 # Nota (Lenin Elio - 29/04/2023 17:39)
 # Fin de busqueda e insersion de alumnos
@@ -818,8 +911,7 @@ def ocultar_cursos_moodle(semestre, lista=False):
 
             return 'Cursos ocultados correctamente.'
 
-        else:
-            return 'No hay mas cursos por ocultar.'
+        return 'No hay mas cursos por ocultar.'
 
     except requests.exceptions.RequestException as error:
         return f'Error al finalizar el semestre, error: {error}'
@@ -856,9 +948,7 @@ def obtener_visibilidad_curso(semestre):
             ocultar_cursos_moodle(visibles, True)
 
             return f'Cantidad de cursos que aun estan visibles: {len(visibles)}'
-
-        else:
-            return 'No hay mas cursos para procesar.'
+        return 'No hay mas cursos para procesar.'
 
     except requests.exceptions.RequestException as error:
         return f'Error en la obtencion de la visibilidad de cursos, error {error}'

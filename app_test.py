@@ -34,3 +34,6 @@ def matricular_usuarios(semestre, alumno=None):
 
     except requests.exceptions.RequestException as error:
         return f'Error en las matriculas, error: {error}'
+
+
+matricular_usuarios('2021-1')

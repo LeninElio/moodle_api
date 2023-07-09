@@ -9,7 +9,7 @@ from funciones import decorador
 from funciones import reporte
 
 
-def main(semestre, semetre_anterior):
+def main(semestre, semestre_anterior):
     """
     Ejecutar la app principal
     Este código es el programa principal que ejecuta una serie de funciones desde un módulo
@@ -32,104 +32,108 @@ def main(semestre, semetre_anterior):
     # print(semestre_creado)
 
     # 2. Creacion del categoria facultades
-    # facultades_creados = mg.crear_facultades(SEMESTRE)
+    # facultades_creados = mg.crear_facultades(semestre)
     # print(facultades_creados)
 
     # 3. Creacion del categoria escuelas
-    # escuelas_creadas = mg.crear_escuelas(SEMESTRE)
+    # escuelas_creadas = mg.crear_escuelas(semestre)
     # print(escuelas_creadas)
 
     # 4. Creacion del categoria ciclos
-    # ciclos_creados = mg.crear_ciclos(SEMESTRE)
+    # ciclos_creados = mg.crear_ciclos(semestre)
     # print(ciclos_creados)
 
+    # Manejo de docentes
+    # docente = mg.creacion_docente_moodle(semestre)
+    # print(docente)
+
     # 5. Migracion de cursos a nivel de base de datos
-    # migrar = mg.migracion_cursos_bd(SEMESTRE, '2023-05-04')
+    # migrar = mg.migracion_cursos_bd(semestre, '2023-07-09')
     # print(migrar)
 
     # 6. Creacion de cursos
-    # cursos_creados = mg.crear_cursos(SEMESTRE)
+    # cursos_creados = mg.crear_cursos(semestre)
     # print(cursos_creados)
 
     # 6.1. Algunos cursos no se insertaron por la concurrencia
     #      Realizar varias ejecuciones hasta que no retorne cursos
-    # corregir = mg.corregir_cursos_noinsertados(SEMESTRE)
-    # print(corregir)
+    corregir = mg.corregir_cursos_noinsertados(semestre)
+    print(corregir)
 
     # 7. Crear usuarios (alumnos), usar la opcion si no tiene alumnos creados en moodle
-    # crear_usuarios = mg.crear_usuarios(SEMESTRE)
+    # crear_usuarios = mg.crear_usuarios(semestre)
     # print(crear_usuarios)
 
     # 7.1. Algunos alumno no se insertaron por la concurrencia
-    # corregir_alumnos = mg.corregir_alumno_noinsertado(SEMESTRE)
+    # corregir_alumnos = mg.corregir_alumno_noinsertado(semestre)
     # print(corregir_alumnos)
 
     # 8. Matricular usuarios, esta funcion recibe dos parametros semestre y alumno
     # alumno es opcional, por si quiere hacer matriculas de un solo alumno
-    # matricular = mg.matricular_usuarios(SEMESTRE)
+    # matricular = mg.matricular_usuarios(semestre)
     # print(matricular)
 
     # 8.1. Probablemente algunas matriculas fallen, en este caso se hace una busqueda de esos
-    # matriculas_restante = mg.obtener_matriculas_moodle_pandas(SEMESTRE)
+    # matriculas_restante = mg.obtener_matriculas_moodle_pandas(semestre)
     # print(matriculas_restante)
 
-    return mg.crear_cursos('ret'), semestre, semetre_anterior
+    # return mg.crear_cursos('ret'), semestre, semetre_anterior
 
 
-@decorador.calcular_tiempo_arg
-def listar_contenido_cursos_semana(cursos):
-    """
-    Obtener la lista de todo el contenido del curso de forma concurrente
-    mejorado la peticion para identificar cursos y todos los recursos
-    """
-    with ThreadPoolExecutor() as executor:
-        futures = [executor.submit(moodle.obtener_todos_recursos_semana, curso) for curso in cursos]
-        resultados = wait(futures)
-
-    resultado_final = {}
-    for future in resultados.done:
-        try:
-            resultado = future.result()
-            resultado_final.update(resultado)
-
-        except Exception as e_e: # pylint: disable=broad-except
-            print(f"Ocurrió un error al obtener los recursos del curso: {e_e}")
-
-    return resultado_final
+if __name__ == "__main__":
+    SEMESTRE = '2023-1'
+    SEMESTRE_ANTERIOR = '2022-2'
+    main(SEMESTRE, SEMESTRE_ANTERIOR)
 
 
-cursos_id = [8611]
-contenidos = listar_contenido_cursos_semana(cursos_id)
-print(json.dumps(contenidos))
+# @decorador.calcular_tiempo_arg
+# def listar_contenido_cursos_semana(cursos):
+#     """
+#     Obtener la lista de todo el contenido del curso de forma concurrente
+#     mejorado la peticion para identificar cursos y todos los recursos
+#     """
+#     with ThreadPoolExecutor() as executor:
+#         futures = [executor.submit(moodle.obtener_todos_recursos_semana, curso) for curso in cursos]
+#         resultados = wait(futures)
+
+#     resultado_final = {}
+#     for future in resultados.done:
+#         try:
+#             resultado = future.result()
+#             resultado_final.update(resultado)
+
+#         except Exception as e_e: # pylint: disable=broad-except
+#             print(f"Ocurrió un error al obtener los recursos del curso: {e_e}")
+
+#     return resultado_final
 
 
-@decorador.calcular_tiempo_arg
-def listar_notas_curso(curso):
-    """
-    Obtener todas las notas del curso en un archivo excel
-    """
-    contenido = moodle.obtener_notas_curso(curso)
-
-    data = []
-    for conten in contenido['usergrades']:
-        for grade in conten['gradeitems']:
-            if grade['grademax'] == 20:
-                data.append((conten['userfullname'], grade['itemname'], grade['gradeformatted']))
-
-    respuesta = defaultdict(list)
-    for alumno, examen, nota in data:
-        if alumno not in respuesta['alumno']:
-            respuesta['alumno'].append(alumno)
-        respuesta[examen].append(nota)
-
-    reporte.descargar_xlsx(respuesta)
+# cursos_id = [8611]
+# contenidos = listar_contenido_cursos_semana(cursos_id)
+# print(json.dumps(contenidos))
 
 
-CURSO_ID = 8611
-listar_notas_curso(CURSO_ID)
+# @decorador.calcular_tiempo_arg
+# def listar_notas_curso(curso):
+#     """
+#     Obtener todas las notas del curso en un archivo excel
+#     """
+#     contenido = moodle.obtener_notas_curso(curso)
+
+#     data = []
+#     for conten in contenido['usergrades']:
+#         for grade in conten['gradeitems']:
+#             if grade['grademax'] == 20:
+#                 data.append((conten['userfullname'], grade['itemname'], grade['gradeformatted']))
+
+#     respuesta = defaultdict(list)
+#     for alumno, examen, nota in data:
+#         if alumno not in respuesta['alumno']:
+#             respuesta['alumno'].append(alumno)
+#         respuesta[examen].append(nota)
+
+#     reporte.descargar_xlsx(respuesta)
 
 
-# if __name__ == "__main__":
-#     SEMESTRE = '2020-2'
-#     SEMESTRE_ANTERIOR = '2019-1'
-#     main(SEMESTRE, SEMESTRE_ANTERIOR)
+# CURSO_ID = 8611
+# listar_notas_curso(CURSO_ID)
