@@ -484,3 +484,20 @@ def obtener_notas_curso(curso_id): # pylint: disable=missing-docstring
 
     response = session.post(f"{url}", params=list_params).json()
     return dict(response)
+
+
+def obtener_docente_matriculado(curso_id): # pylint: disable=missing-docstring
+    list_params = {
+        "wstoken": api_key,
+        "moodlewsrestformat": "json",
+        "wsfunction": "core_enrol_get_enrolled_users",
+        "courseid": int(curso_id)
+    }
+
+    response = session.post(f"{url}", params=list_params).json()
+    resultado = [
+        (curso_id, docente['id'])
+        for docente in response
+        if docente['roles'][0]['roleid'] == 3
+    ]
+    return resultado

@@ -1,6 +1,8 @@
-""" Este módulo contiene funciones que interactuan con la API de moodle y la base de datos """
+"""
+Este módulo contiene funciones que interactuan con la API de moodle y la base de datos
+"""
 
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, wait
 import datetime
 import concurrent.futures
 import json
@@ -351,21 +353,20 @@ def crear_curso_restante_moodle(lista):
         return f'Subproceso: Error en la creacion de cursos restantes, error: {error}'
 
 
-def insertar_idcurso_moodle_bd(alumnos):
+def insertar_idcurso_moodle_bd(cursos):
     """
     Esta función inserta los ID de los cursos de Moodle en una tabla de la base de datos y
     actualiza los registros correspondientes en otra tabla.
 
-    :param alumnos: Es una lista de tuplas que contiene el nombre de un curso y su ID de Moodle
+    :param cursos: Es una lista de tuplas que contiene el nombre de un curso y su ID de Moodle
     correspondiente
 
     :return: a string message: 'Subproceso: Ids cursos insertados de moodle a bd.'
     """
     sql.ejecutar("CREATE TABLE sva.le_courses_temp (nombrecorto VARCHAR(255), id_moodle INT)")
 
-    for alumno in alumnos:
-        data = {'nombrecorto': alumno[0], 'id_moodle': alumno[1]}
-        sql.insertar_datos('sva.le_courses_temp', data)
+    query = 'INSERT INTO sva.le_courses_temp (nombrecorto, id_moodle) VALUES (%d, %d)'
+    sql.insertar_muchos(query, cursos)
 
     sql.ejecutar("""
         UPDATE lc
@@ -460,7 +461,7 @@ def crear_usuarios(semestre):
 
     :return: una lista de respuestas de una ejecución concurrente.
     """
-    query = f''' EXEC le_datos_matriculados '{semestre}' '''
+    query = f''' EXEC sga.le_datos_matriculados '{semestre}' '''
 
     try:
         resultados = sql.lista_query(query)
@@ -472,7 +473,7 @@ def crear_usuarios(semestre):
         return responses
 
     except requests.exceptions.RequestException as error:
-        return f'Fallaste {error}'
+        return f'Error en la creacion de usuarios, {error}'
 
 
 # Nota (Lenin Elio - 29/04/2023 17:30)
@@ -512,9 +513,8 @@ def insertar_iduser_moodle_bd(alumnos):
     """
     sql.ejecutar("CREATE TABLE sva.le_alumnos (nombreusuario VARCHAR(20), moodle_id INT)")
 
-    for alumno in alumnos:
-        data = {'nombreusuario': alumno[0], 'moodle_id': alumno[1]}
-        sql.insertar_datos('sva.le_alumnos', data)
+    query = 'INSERT INTO sva.le_alumnos (nombreusuario, moodle_id) VALUES (%d, %d)'
+    sql.insertar_muchos(query, alumnos)
 
     sql.ejecutar("""
         UPDATE a
@@ -602,23 +602,11 @@ def crear_usuario_restante(lista):
     usuarios = "', '".join(lista)
 
     query = f'''
-    SELECT LOWER
-        ( Alumno ) AS username,
-        TRIM ( Password ) AS password,
-        Nombre AS nombre,
-        CONCAT ( ApellidoPaterno, ' ', ApellidoMaterno ) AS apellido,
-        LOWER (
-            REPLACE(
-                CONCAT (
-                    dbo.eliminar_acentos ( SUBSTRING ( ApellidoPaterno, 1, 2 ) ),
-                    -- '_',
-                    dbo.eliminar_acentos ( ApellidoMaterno ),
-                    dbo.eliminar_acentos ( SUBSTRING ( Nombre, 1, 2 ) ),
-                    '@unasam.edu.pe'
-                ),
-                ' ', ''
-            )
-        ) AS correo
+    SELECT LOWER(Alumno) AS username,
+    TRIM ( Password ) AS password,
+    Nombre AS nombre,
+    CONCAT ( ApellidoPaterno, ' ', ApellidoMaterno ) AS apellido,
+    trim(Concat('temp_', Email)) as email 
     FROM
         dbo.Alumno AS a
     WHERE
@@ -646,16 +634,7 @@ def crear_usuario_restante(lista):
 @decorador.calcular_tiempo_arg
 def corregir_alumno_noinsertado(semestre):
     """
-    Esta función corrige a los estudiantes que no se han insertado en la base de datos consultando
-    sus nombres y luego utilizando subprocesos múltiples para obtener sus ID y nombres de usuario
-    de Moodle, que luego se insertan en la base de datos.
-
-    :param semestre: El semestre para el que la función está tratando de corregir los datos.
-
-    :return: una cadena que indica la cantidad de estudiantes que aún deben insertarse en la base
-    de datos de Moodle. Si no hay más alumnos para corregir, devuelve una cadena que indica que
-    no hay más datos para corregir. Si hay un error durante el proceso, devuelve una cadena que
-    indica el error.
+    Corregir la creacion de usuarios.
     """
     query = f'''
     SELECT DISTINCT
@@ -687,6 +666,64 @@ def corregir_alumno_noinsertado(semestre):
 
     except requests.exceptions.RequestException as error:
         return f'Error en la correccion de alumnos, error: {error}'
+
+
+def listar_docente_curso(cursos):
+    """
+    Obtener la lista de matriculados
+    """
+    with ThreadPoolExecutor() as executor:
+        futures = [
+              executor.submit(moodle.obtener_docente_matriculado, curso)
+              for curso in cursos
+        ]
+        resultados = wait(futures)
+
+    resultado_final = []
+    for future in resultados.done:
+        try:
+            docentes = future.result()
+            resultado_final.extend(docentes)
+
+        except Exception as e_e: # pylint: disable=broad-except
+            print(f"Ocurrió un error al obtener los matriculados del curso: {e_e}")
+
+    return resultado_final
+
+
+@decorador.calcular_tiempo_arg
+def corregir_docente_noinsertado(semestre):
+    """
+    Corregir docente no insertado.
+    """
+    cursos_id = f'''
+    SELECT lc.id_moodle 
+    FROM sva.le_cursos lc 
+    WHERE
+        lc.semestre = '{semestre}'
+        AND lc.docente_id IS NOT NULL
+    '''
+    cursos = sql.lista_query_especifico(cursos_id)
+    cursos_moodle = listar_docente_curso(cursos)
+
+    curso_docente = f'''
+    SELECT
+        lc.id_moodle, lc.docente_id 
+    FROM
+        sva.le_cursos lc 
+    WHERE
+        lc.semestre = '{semestre}'
+        AND lc.docente_id IS NOT NULL
+    '''
+
+    cursos_sga = sql.lista_query(curso_docente)
+    try:
+        cursos_sga = set(cursos_sga)
+        cursos_moodle = set(cursos_moodle)
+        return (len(cursos_sga), len(cursos_moodle)), cursos_sga - cursos_moodle
+
+    except requests.exceptions.RequestException as error:
+        return f'Error en la comparacion, error: {error}'
 
 
 @decorador.calcular_tiempo_arg
@@ -748,10 +785,10 @@ def matricular_usuarios(semestre, alumno=None):
     realizar, o un mensaje de error si hubo un error durante el proceso de matrícula.
     """
     if alumno is None:
-        query = f''' EXEC le_matriculados '{semestre}' '''
+        query = f''' EXEC sga.le_matriculados '{semestre}' '''
 
     else:
-        query = f''' EXEC le_matriculados '{semestre}', '{alumno}' '''
+        query = f''' EXEC sga.le_matriculados '{semestre}', '{alumno}' '''
 
     resultados = sql.lista_query(query)
 
@@ -766,8 +803,46 @@ def matricular_usuarios(semestre, alumno=None):
 
             return 'Matriculas realizadas con exito.'
 
-        else:
-            return 'No hay matriculas a realizar.'
+        return 'No hay matriculas a realizar.'
+
+    except requests.exceptions.RequestException as error:
+        return f'Error en las matriculas, error: {error}'
+
+
+# matricular docentes
+@decorador.calcular_tiempo_arg
+def matricular_docentes(semestre, docente=None):
+    """
+    Matricular docentes.
+    """
+    if docente is None:
+        query = f'''
+        SELECT
+            lc.id_moodle,
+            lc.docente_id 
+        FROM
+            sva.le_cursos lc 
+        WHERE
+            lc.semestre = '{semestre}' 
+            AND lc.docente_id IS NOT NULL
+        '''
+
+    else:
+        query = f''' EXEC lx_matriculados '{semestre}', '{docente}' '''
+
+    resultados = sql.lista_query(query)
+
+    try:
+        if resultados != []:
+
+            list_params = moodle.concurr_matricular_usuario(resultados, 3)
+
+            with ThreadPoolExecutor() as executor:
+                executor.map(moodle.creacion_concurrente, list_params)
+
+            return 'Matriculas de docentes realizadas con exito.'
+
+        return 'No hay matriculas a realizar.'
 
     except requests.exceptions.RequestException as error:
         return f'Error en las matriculas, error: {error}'
@@ -868,8 +943,7 @@ def obtener_matriculas_moodle_pandas(semestre):
             insertar_matriculas_bd(matriculas, semestre_val[0])
             return f'Se ha procesado {len(matriculas)} matriculas.'
 
-        else:
-            return 'Parece que hay un error en el semestre.'
+        return 'Parece que hay un error en el semestre.'
 
     except requests.exceptions.RequestException as error:
         return f'Error en el procesado de matriculas con pandas, {error}'

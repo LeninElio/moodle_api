@@ -47,6 +47,14 @@ def insertar_datos(table, data):
         cursor.execute(query, tuple(data.values()))
 
 
+def insertar_muchos(query, data):
+    """
+    Multiples inserciones
+    """
+    with obtener_cursor() as cursor:
+        cursor.executemany(query, data)
+
+
 def actualizar_datos(set_values, condition):
     """
     Esta función actualiza el valor moodle_id en la tabla Alumno para una condición dada.

@@ -57,10 +57,18 @@ def main(semestre, semestre_anterior):
 
     # 6.1. Algunos cursos no se insertaron por la concurrencia
     #      Realizar varias ejecuciones hasta que no retorne cursos
-    corregir = mg.corregir_cursos_noinsertados(semestre)
-    print(corregir)
+    # corregir = mg.corregir_cursos_noinsertados(semestre)
+    # print(corregir)
 
-    # 7. Crear usuarios (alumnos), usar la opcion si no tiene alumnos creados en moodle
+    # 8. Matricular docentes, esta funcion recibe dos parametros semestre y docente
+    # matricular = mg.matricular_docentes(semestre)
+    # print(matricular)
+
+    # 7.1. Algunos docentes no se insertaron por la concurrencia
+    # corregir_docentes = mg.corregir_docente_noinsertado(semestre)
+    # print(corregir_docentes)
+
+    # 7. Crear usuarios (alumnos)
     # crear_usuarios = mg.crear_usuarios(semestre)
     # print(crear_usuarios)
 
@@ -74,8 +82,8 @@ def main(semestre, semestre_anterior):
     # print(matricular)
 
     # 8.1. Probablemente algunas matriculas fallen, en este caso se hace una busqueda de esos
-    # matriculas_restante = mg.obtener_matriculas_moodle_pandas(semestre)
-    # print(matriculas_restante)
+    matriculas_restante = mg.obtener_matriculas_moodle_pandas(semestre)
+    print(matriculas_restante)
 
     # return mg.crear_cursos('ret'), semestre, semetre_anterior
 
@@ -93,7 +101,10 @@ if __name__ == "__main__":
 #     mejorado la peticion para identificar cursos y todos los recursos
 #     """
 #     with ThreadPoolExecutor() as executor:
-#         futures = [executor.submit(moodle.obtener_todos_recursos_semana, curso) for curso in cursos]
+#         futures = [
+#               executor.submit(moodle.obtener_todos_recursos_semana, curso)
+#               for curso in cursos
+#         ]
 #         resultados = wait(futures)
 
 #     resultado_final = {}
