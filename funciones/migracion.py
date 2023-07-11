@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor, wait
 import datetime
 import concurrent.futures
 import json
+import os
 import requests
 import pandas as pd
 from funciones import decorador, moodle, sql
@@ -855,30 +856,26 @@ def matricular_docentes(semestre, docente=None):
 # esto con el fin de conocer que matriculas no se ejecutaron
 
 
-def insertar_matriculas_bd(matriculas, semestre):
+def insertar_matriculas_bd():
     """
-    Esta función inserta datos de matriculación en una tabla de base de datos.
-
-    :param matriculas: Una lista de tuplas que contienen la identificación del curso, la
-    identificación del estudiante y la identificación del semestre para cada inscripción
-    que se insertará en la base de datos.
-
-    :param semestre: El ID del semestre al que pertenecen las matrículas
-
-    :return: un mensaje de cadena que indica que el proceso de inserción de datos se ha completado.
+    Bulk SQL.
     """
+    archivo = os.path.join(os.path.dirname(__file__), '../data/matriculas.csv')
+
     with sql.obtener_cursor() as cursor:
-        for matricula in matriculas:
-            data = {'curso_id': matricula[0], 'alumno_id': matricula[1], 'semestre_id': semestre}
+        cursor.execute(
+            f'''
+            BULK INSERT sva.le_matriculas_moodle
+            FROM '{archivo}'
+            WITH
+                (
+                    FIRSTROW = 2,
+                    FIELDTERMINATOR = ',',
+                    ROWTERMINATOR = '\n'
+                )
 
-            cursor.execute('''
-            INSERT INTO sva.le_maticulas_moodle
-            (curso_id, alumno_id, semestre_id)
-            VALUES (%s, %s, %s)''', (
-                data['curso_id'],
-                data['alumno_id'],
-                data['semestre_id']
-                ))
+            '''
+            )
 
     return 'Se completo la insersion de datos obtenidos.'
 
@@ -937,10 +934,19 @@ def obtener_matriculas_moodle_pandas(semestre):
             json_data = json.dumps(responses)
             dataframe = pd.read_json(json_data)
 
-            matriculas = transformar_dataframe(dataframe)
+            total_dados = transformar_dataframe(dataframe)
+            matriculas = [matricula + (semestre_val[0], ) for matricula in total_dados]
+
+            matriculas = set(matriculas)
             print(f'Subprocesando {len(matriculas)} matriculas.')
 
-            insertar_matriculas_bd(matriculas, semestre_val[0])
+            query = '''
+            INSERT INTO sva.le_matriculas_moodle 
+            (curso_id, alumno_id, semestre_id) 
+            VALUES (%d, %d, %d)
+            '''
+            sql.insertar_muchos(query, matriculas)
+
             return f'Se ha procesado {len(matriculas)} matriculas.'
 
         return 'Parece que hay un error en el semestre.'
