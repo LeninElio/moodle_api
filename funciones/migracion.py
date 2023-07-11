@@ -882,26 +882,31 @@ def insertar_matriculas_bd():
 
 def transformar_dataframe(dataframe):
     """
-    La función transforma un marco de datos dado al extraer los valores de 'id' de ciertas columnas
-    y los devuelve como una lista de tuplas.
-
-    :param dataframe: un marco de datos de pandas que contiene columnas con información sobre
-    los cursos inscritos y las identificaciones de los estudiantes
-
-    :return: una lista de tuplas, donde cada tupla contiene dos elementos: la identificación de
-    un curso y la identificación de un estudiante que está inscrito en ese curso.
+    Transforma los resultados del dataframe.
     """
     obtenidos = []
     for col in dataframe.columns:
         for row in dataframe[col]:
             if row is not None and 'id' in row:
+                directores = [
+                    7249, 7250, 7251, 7252, 7253, 7254, 7255, 7256,
+                    7257, 7258, 7259, 7260, 7261, 7262, 7263, 7264,
+                    7265, 7266, 7267, 7268, 7269, 7270, 7271, 7272,
+                    7273, 7274, 7275, 7276, 7326, 7277, 7299, 7300,
+                    7301, 7302, 7303, 7304, 7305, 7306, 7307, 7308,
+                    7309, 7310, 7311, 7312, 7313, 7314, 7315, 7316
+                ]
+
                 cursos = [
                     curso['id']
                     for curso in row['enrolledcourses']
                     if 'id' in curso
-                    ] if row['enrolledcourses'] is not None else []
-                obtenidos.append([(curso, row['id']) for curso in cursos])
+                    and row['id'] not in directores
+                    and row['roles'][0]['roleid'] == 5
+                    and row['enrolledcourses'][0]['id'] >= 8797
+                ] if row['enrolledcourses'] is not None else []
 
+                obtenidos.append([(curso, row['id']) for curso in cursos])
     obtenido = [ids for lista in obtenidos for ids in lista]
     return obtenido
 
@@ -934,18 +939,22 @@ def obtener_matriculas_moodle_pandas(semestre):
             json_data = json.dumps(responses)
             dataframe = pd.read_json(json_data)
 
-            total_dados = transformar_dataframe(dataframe)
-            matriculas = [matricula + (semestre_val[0], ) for matricula in total_dados]
+            total_datos = transformar_dataframe(dataframe)
+            matriculas = [matricula + (semestre_val[0], ) for matricula in total_datos]
 
             matriculas = set(matriculas)
             print(f'Subprocesando {len(matriculas)} matriculas.')
 
-            query = '''
-            INSERT INTO sva.le_matriculas_moodle 
-            (curso_id, alumno_id, semestre_id) 
-            VALUES (%d, %d, %d)
-            '''
-            sql.insertar_muchos(query, matriculas)
+            matriculas = pd.DataFrame(matriculas, columns=['id_curso', 'id_usuario', 'semestre'])
+            matriculas['semestre'] = semestre_val[0]
+            matriculas.to_csv('./data/matriculas.csv', index=False)
+
+            # query = '''
+            # INSERT INTO sva.le_matriculas_moodle
+            # (curso_id, alumno_id, semestre_id)
+            # VALUES (%d, %d, %d)
+            # '''
+            # sql.insertar_muchos(query, matriculas)
 
             return f'Se ha procesado {len(matriculas)} matriculas.'
 

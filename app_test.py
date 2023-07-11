@@ -13,6 +13,7 @@ def obtener_matriculas_moodle_pandas(semestre):
     """
     semestre_val = sql.informacion_semestre(semestre)
     cursos = ['8799', '10209', '12273', '11356', '13002', '13562', '10211', '8797', '8798', '11357']
+    # cursos = ['8799']
 
     try:
         if cursos:
@@ -24,26 +25,26 @@ def obtener_matriculas_moodle_pandas(semestre):
             json_data = json.dumps(responses)
             dataframe = pd.read_json(json_data)
 
-            total_dados = mg.transformar_dataframe(dataframe)
-            matriculas = [matricula + (semestre_val[0], ) for matricula in total_dados]
+            total_datos = mg.transformar_dataframe(dataframe)
+            matriculas = [matricula + (semestre_val[0], ) for matricula in total_datos]
 
             matriculas = set(matriculas)
             print(f'Subprocesando {len(matriculas)} matriculas.')
 
-            query = '''
-            INSERT INTO sva.le_matriculas_moodle 
-            (curso_id, alumno_id, semestre_id) 
-            VALUES (%d, %d, %d)
-            '''
-            sql.insertar_muchos(query, matriculas)
-            # matriculas = pd.DataFrame(matriculas, columns=['id_curso', 'id_usuario'])
-            # matriculas['semestre'] = semestre_val[0]
-            # matriculas.to_csv('./data/matriculas.csv', index=False)
+            # query = '''
+            # INSERT INTO sva.le_matriculas_moodle
+            # (curso_id, alumno_id, semestre_id)
+            # VALUES (%d, %d, %d)
+            # '''
+            # sql.insertar_muchos(query, matriculas)
 
-            # el csv resultante insertalo con un bulk insert
+            matriculas = pd.DataFrame(matriculas, columns=['id_curso', 'id_usuario', 'semestre'])
+            matriculas['semestre'] = semestre_val[0]
+            matriculas.to_csv('./data/matriculas.csv', index=False)
+
             # mg.insertar_matriculas_bd(matriculas)
 
-            return f'Se ha procesado {len(matriculas)} matriculas.'
+            return f'Se ha procesado {len(total_datos)} matriculas.'
 
         return 'Parece que hay un error en el semestre.'
 
@@ -54,5 +55,5 @@ def obtener_matriculas_moodle_pandas(semestre):
 # data = obtener_matriculas_moodle_pandas('2023-1')
 # print(data)
 
-data = mg.insertar_matriculas_bd()
-print(data)
+data_insert = obtener_matriculas_moodle_pandas('2023-1')
+print(data_insert)

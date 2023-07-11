@@ -76,8 +76,8 @@ def main(semestre, semestre_anterior=None):
     # print(matricular)
 
     # Paso 16. Probablemente algunas matriculas fallen, en este caso se hace una busqueda de esos
-    # matriculas_restante = mg.obtener_matriculas_moodle_pandas(semestre)
-    # print(matriculas_restante)
+    matriculas_restante = mg.obtener_matriculas_moodle_pandas(semestre)
+    print(matriculas_restante)
 
     return f'Semestre actual: {semestre},  semestre anterior: {semestre_anterior}'
 
